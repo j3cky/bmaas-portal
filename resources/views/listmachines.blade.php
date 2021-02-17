@@ -65,7 +65,7 @@
 <script src="{{url('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 
 <script src="/adminlte/plugins/jquery/jquery.min.js"></script>
-<script src="/adminlte/dist/js/adminlte.min.js"></script>
+<!-- <script src="/adminlte/dist/js/adminlte.min.js"></script> -->
 <script src="/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 
 

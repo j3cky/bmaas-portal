@@ -125,7 +125,7 @@ class BCFController extends Controller
 		
                 $cookie = $this->Login();
                 $curl = curl_init();
-		$jsonparam = '{%5Binterface-group%3D%22Fujitsu0.15-dvs%22%5D
+		$jsonparam = '{
                 		"interface-group": "'.$ifgroup.'",
                 		"virtual": false,
                 		"vlan": '.$vlan.'

@@ -282,7 +282,13 @@ class BMAASDBController extends Controller
 			->where('machine_network_info.destroyed',NULL)
 			->first();
         }
-
+	public function GetBMAASMachinesWF($uuid,$tenantid){
+                return DB::table('machine_workflow_info')
+			->where('tenant_id',$tenantid)
+			->where('machine_uuid',$uuid)
+                        ->where('destroyed',NULL)
+                        ->first();
+	}
 
         public function GetTenantList(){
 		$tenants = DB::table('tenant')->get();
@@ -323,5 +329,39 @@ class BMAASDBController extends Controller
                         ['ssh_key_name' => $sshkey[0],'ssh_key' => "$sshkey[1]",'tenant_id' => $sshkey[2]]
                 );
         }
+        Public function AddBMAASWF($params){
+                DB::table('machine_workflow_info')->insert(
+                        ['machine_uuid' => $params[0],'workflow' => $params[1],'tenant_id' => $params[2]]
+                );
+	}
 
+        Public function AddBMAASKubCluster($params){
+                DB::table('tenant_kubernetes_cluster')->insert(
+                        ['tenant_id' => $params[0],'profile_name' => $params[1]]
+                );
+	}
+
+	Public function RemoveBMAASKubCluster($tenant_id){
+                $current_date = date('Y-m-d H:i:s');
+                DB::table('tenant_kubernetes_cluster')
+                        ->where('tenant_id', $tenant_id)
+                        ->where('destroyed', NULL)
+                        ->update(['destroyed' => $current_date]);
+
+        }
+	
+	Public function CheckBMAASKubCluster($tenant_id){
+                return DB::table('tenant_kubernetes_cluster')
+			->where('tenant_id',$tenant_id)
+			->where('destroyed', NULL)
+                        ->first();	
+        }	
+
+        Public function RemoveBMAASWF($uuid){
+                $current_date = date('Y-m-d H:i:s');
+                DB::table('machine_workflow_info')
+                        ->where('machine_uuid', $uuid)
+			->where('destroyed', NULL)
+                        ->update(['destroyed' => $current_date]);
+        }
 }

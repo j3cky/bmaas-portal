@@ -47,10 +47,10 @@ Route::get('/halo', function () {
 	return "Halo, Selamat datang di tutorial laravel www.malasngoding.com";
 });
 
-//Route::get('/irctest', 'RackNController@TestIRC')->middleware('auth');
-Route::get('/irctest', function () {
-    return view('testirc');
-});
+Route::get('/irctest', 'RackNController@TestIRC')->middleware('auth');
+//Route::get('/irctest', function () {
+//    return view('testirc');
+//});
 
 Route::get('/listmachines/', 'RackNController@GetListMachines')->middleware('auth');
 Route::get('/listmachineskub/', 'RackNController@ListKubMachines')->middleware('auth');

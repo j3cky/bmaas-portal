@@ -31,7 +31,7 @@
                 <td style="font-size: 14px">{{$row->Uuid}}</td>
                 <td style="font-size: 14px">{{$addr[$row->Uuid]['private'] }}</td>
                 <td style="font-size: 14px">{{$addr[$row->Uuid]['public']}}</td>
-                <td style="font-size: 14px">{{$row->Workflow}}</td>
+                <td style="font-size: 14px">{{$addr[$row->Uuid]['workflow']}}</td>
                 <td style="font-size: 14px">
                 @foreach ($row->Profiles as $profile)
                 {{$profile}}

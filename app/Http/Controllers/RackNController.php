@@ -201,6 +201,7 @@ class RackNController extends Controller
 			$this->DeleteVMfromDRP($uuid);
 			$BMAASDBController->RemoveBMAASPublicMachineAddr($uuid);
 			$BMAASDBController->RemoveBMAASMachineAddr($uuid);
+			$BMAASDBController->RemoveBMAASWF($uuid);
 
 		}
 		$BCFController->DeleteInterfaceGroup($tenant."-baremetal","CVC001",$user);
@@ -235,6 +236,7 @@ class RackNController extends Controller
 			$NetBoxController->UpdateStatusPubIP("active","null",$pubipid->netbox_addr_id);
 			$BMAASDBController->RemoveBMAASPublicMachineAddr($uuid);
 			$BMAASDBController->RemoveBMAASMachineAddr($uuid);
+			$BMAASDBController->RemoveBMAASWF($uuid);
 			$statuswf = $this->AssignWorkflow($uuid,"discover-base-Machines");
                         $ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
                         $BCFController->DeleteInterfaceGroup($tenant."-baremetal",$ifgroup->ifgroup_uplink,$user);			
@@ -250,7 +252,7 @@ class RackNController extends Controller
 		}
 		$BMAASDBController->RemoveBMAASPubNetworkLBRange("$tenant-Cluster");
 		$BMAASDBController->RemoveBMAASPubNetwork($tenantquery->tenant_id);
-		 
+		$BMAASDBController->RemoveBMAASKubCluster($tenantquery->tenant_id);
 
 		$this->DeleteProfiles($profile);
 		foreach($certarrs as $certarr){
@@ -264,6 +266,7 @@ class RackNController extends Controller
 		//$tenant = request()->segment(1);
 		$BMAASDBController = new BMAASDBController;
 		$NetBoxController = new NetBoxController;
+		$BCFController = new BCFController;
 		$tenantget = $BMAASDBController->GetTenantbyUser($user->id);
 		$tenant =  $tenantget->tenant_name;
 		$typeos = $request->typeos;
@@ -305,7 +308,7 @@ class RackNController extends Controller
 				$this->AssignWorkflow($uuid,"discover-base-Machines");
 	                        $ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
         	                $BCFController->DeleteInterfaceGroup($tenant."-baremetal",$ifgroup->ifgroup_uplink,$user);
-				
+				$BMAASDBController->RemoveBMAASWF($uuid);
 				//$this->ResetVMUefiBoot($param->vmname);
 				if(!empty($machinesinfo->public_ip)){
 					$NetBoxController->UpdateStatusPubIP("active","null",$pubip_id);
@@ -332,7 +335,8 @@ class RackNController extends Controller
 				$this->ResetServer($ipmiaddr);
 				$this->PatchMachinesParam($uuid,$parampatch);
 				$this->AssignWorkflow($uuid,"discover-base-Machines");
-                                $ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
+				$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
+				$BMAASDBController->RemoveBMAASWF($uuid);
                                 $BCFController->DeleteInterfaceGroup($tenant."-baremetal",$ifgroup->ifgroup_uplink,$user);				
 				//$this->ResetVMUefiBoot($param->vmname);
 				if(!empty($machinesinfo->public_ip)){
@@ -438,9 +442,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			//exit;
 			foreach ($resultwindec as $key => $value){
 				$addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$wf = $BMAASDBController->GetBMAASMachinesWF($value->Uuid,$tenantget->tenant_id);
 				//print_r($addresults);
 				$machinesadd[$addresults->machine_uuid]['private'] = $addresults->ip_address;
 				$machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
+				$machinesadd[$addresults->machine_uuid]['workflow'] = $wf->workflow;
 			}
 		//	print_r($machinesadd);
 		//	exit;
@@ -468,10 +474,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         //print_r($resultdec[0]->Params->privatenetwork->IP);
                         //exit;
                         foreach ($resultkubdec as $key => $value){
-                                $addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$wf = $BMAASDBController->GetBMAASMachinesWF($value->Uuid,$tenantget->tenant_id);
                                 //print_r($addresults);
                                 $machinesadd[$value->Uuid]['private'] = $addresults->ip_address;
-                                $machinesadd[$value->Uuid]['public'] = $addresults->public_address;
+				$machinesadd[$value->Uuid]['public'] = $addresults->public_address;
+				$machinesadd[$addresults->machine_uuid]['workflow'] = $wf->workflow;
                         }
                         //print_r($machinesadd);
                         //exit;
@@ -499,13 +507,14 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         //print_r($resultdec[0]->Params->privatenetwork->IP);
                         //exit;
                         foreach ($resultlindec as $key => $value){
-                                $addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
-                                //print_r($addresults);
+				$addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$wf = $BMAASDBController->GetBMAASMachinesWF($value->Uuid,$tenantget->tenant_id);
                                 $machinesadd[$addresults->machine_uuid]['private'] = $addresults->ip_address;
-                                $machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
-                        }
-                        //print_r($machinesadd);
-                        //exit;
+				$machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
+				$machinesadd[$addresults->machine_uuid]['workflow'] = $wf->workflow;
+			}	
+			//print_r($wf);
+			//exit;
                 }
 
 		//return view('listmachines',['listmachineswin' => json_decode($resultwin)],['listmachineskub' => json_decode($resultkub)],['addr' => $machinesadd]);	
@@ -536,10 +545,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                 } else {
                         $resultkubdec = json_decode($resultkub);
                         foreach ($resultkubdec as $key => $value){
-                                $addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$wf = $BMAASDBController->GetBMAASMachinesWF($value->Uuid,$tenantget->tenant_id);
                                 //print_r($addresults);
                                 $machinesadd[$value->Uuid]['private'] = $addresults->ip_address;
-                                $machinesadd[$value->Uuid]['public'] = $addresults->public_address;
+				$machinesadd[$value->Uuid]['public'] = $addresults->public_address;
+				$machinesadd[$value->Uuid]['workflow'] = $wf->workflow;
                         }
 		}
 		 return view('listkubtable',['listmachineskub' => json_decode($resultkub),'addr' => $machinesadd]);
@@ -567,9 +578,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                 } else {
                         $resultwindec = json_decode($resultwin);
                         foreach ($resultwindec as $key => $value){
-                                $addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$wf = $BMAASDBController->GetBMAASMachinesWF($value->Uuid,$tenantget->tenant_id);
                                 $machinesadd[$addresults->machine_uuid]['private'] = $addresults->ip_address;
-                                $machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
+				$machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
+				$machinesadd[$addresults->machine_uuid]['workflow'] = $wf->workflow;
                         }
                 }		
 		curl_close ($ch);
@@ -597,9 +610,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                 } else {
                         $resultlindec = json_decode($resultlin);
                         foreach ($resultlindec as $key => $value){
-                                $addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$addresults = $BMAASDBController->GetMachinesIP($value->Uuid);
+				$wf = $BMAASDBController->GetBMAASMachinesWF($value->Uuid,$tenantget->tenant_id);
                                 $machinesadd[$addresults->machine_uuid]['private'] = $addresults->ip_address;
-                                $machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
+				$machinesadd[$addresults->machine_uuid]['public'] = $addresults->public_ip;
+				$machinesadd[$addresults->machine_uuid]['workflow'] = $wf->workflow;
                         }
                 }
 		curl_close ($ch);
@@ -657,7 +672,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                 $workernum = $request->workernum;
                 $serverspek = $request->serverspek;
                 $pubipcheck = $request->pubipcheck;
-		
+		 
 
 		//if($workernum == "")$workernum=1;
 		//$clustervlan = 202;
@@ -719,6 +734,13 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                 $segmentintip = $BCFController->CreateSegmentInterfaceIP($privategw,$tenant."-baremetal",$user);
                                 $BCFController->ConfigureStaticRoute($prefixarr['prefix'],$user);
 			}
+                        $checkcluster = $BMAASDBController->CheckBMAASKubCluster($tenantget->tenant_id);
+			if(empty($checkcluster)){
+				$params[0] = $tenantget->tenant_id;
+				$params[1] = "$tenant-Cluster"; 
+                                $BMAASDBController->AddBMAASKubCluster($params);
+                        }
+			
                 }else{
                         $networkinfo = $BMAASDBController->GetTenantNetworkInfo($tenant,"baremetal");
                         $networkid = $networkinfo->id;
@@ -735,7 +757,14 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         $ipexplode=explode(".",$privateip);
                         $strcount=strlen($ipexplode[3]);
                         $privategw=substr_replace($privateip,"254",-$strcount);
-                        $mastervip=substr_replace($privateip,"250",-$strcount);
+			$mastervip=substr_replace($privateip,"250",-$strcount);
+			$checkcluster = $BMAASDBController->CheckBMAASKubCluster($tenantget->tenant_id);
+			if(empty($checkcluster)){
+                                $params[0] = $tenantget->tenant_id;
+                                $params[1] = "$tenant-Cluster";				
+				$BMAASDBController->AddBMAASKubCluster($params);
+				$BCFController->AddInterfaceGroup($tenant."-baremetal",$prefixarr['vlan'],"CVC001",$user);
+			}
 
 
                 }
@@ -1082,7 +1111,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                         $addpubnetworkinfo[3]=$pubip[0]['address'];
 
                                         $BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
-                                        $BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
+					$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
+					$params[0] = $uuid;
+                        		$params[1] = $workflow;
+                        		$params[2] = $tenantget->tenant_id;
+                        		$BMAASDBController->AddBMAASWF($params);
                                         $NetBoxController->UpdateStatusPubIP('reserved',$NBtenantid,$pubip[0]['id']);
                                         $ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
                                         $BCFController->AddInterfaceGroup($tenant.'-'.$pubprefixarr['vlan'],$pubprefixarr['vlan'],$ifgroup->ifgroup_uplink,$user);
@@ -1346,7 +1379,13 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         	        $addpubnetworkinfo[0]=$pubnetworkid;
                                 	$addpubnetworkinfo[1]=$pubip[0]['id'];
                                 	$addpubnetworkinfo[2]=$uuid;
-                                	$addpubnetworkinfo[3]=$pubip[0]['address'];
+					$addpubnetworkinfo[3]=$pubip[0]['address'];
+
+                                        $params[0] = $uuid;
+                                        $params[1] = $workflow;
+                                        $params[2] = $tenantget->tenant_id;
+                                        $BMAASDBController->AddBMAASWF($params);
+					
 
                                         $BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
 					$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
@@ -1751,6 +1790,10 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
 			$BCFController->AddInterfaceGroup($tenant."-baremetal",$vlan,$ifgroup->ifgroup_uplink,$user);
 			$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
+			$params[0] = $uuid;
+			$params[1] = $workflow;
+			$params[2] = $tenantget->tenant_id;
+			$BMAASDBController->AddBMAASWF($params);
 		}
 		//return redirect()->action('RackNController@GetListMachines', ['tenantval' => $tenant]);
 		return redirect()->action('RackNController@GetListMachines');
@@ -2023,7 +2066,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         }
                         $ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
                         $BCFController->AddInterfaceGroup($tenant."-baremetal",$vlan,$ifgroup->ifgroup_uplink,$user);
-                        $BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
+			$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
+			$params[0] = $uuid;
+                        $params[1] = "image-deploy";
+                        $params[2] = $tenantget->tenant_id;
+                        $BMAASDBController->AddBMAASWF($params);
+
                 }
 
 		return redirect()->action('RackNController@GetListMachines');
