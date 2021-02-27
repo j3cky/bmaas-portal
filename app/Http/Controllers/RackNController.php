@@ -9,6 +9,7 @@ use App\Http\Controllers\BCFController;
 use App\Http\Controllers\NetBoxController;
 use App\Http\Controllers\BMAASDBController;
 use App\Http\Controllers\SubnetCalculatorController;
+use App\Http\Controllers\ILOController;
 use App\Jobs\DeployKubernetesCluster;
 use Illuminate\Support\Facades\Auth;
 use Cookie;
@@ -267,6 +268,7 @@ class RackNController extends Controller
 		$BMAASDBController = new BMAASDBController;
 		$NetBoxController = new NetBoxController;
 		$BCFController = new BCFController;
+		$ILOController = new ILOController;
 		$tenantget = $BMAASDBController->GetTenantbyUser($user->id);
 		$tenant =  $tenantget->tenant_name;
 		$typeos = $request->typeos;
@@ -314,6 +316,10 @@ class RackNController extends Controller
 					$NetBoxController->UpdateStatusPubIP("active","null",$pubip_id);
 				}
 				$BMAASDBController->RemoveBMAASMachineAddr($uuid);
+                                $ipmival = $BMAASDBController->GetIPMIUsers($ipmiaddr);
+                                $BMAASDBController->RemoveIPMIUsers($ipmival->id);
+                                $ILOController->RemoveILOUser($ipmiaddr,$ipmival->user_ilo_id);
+				
 			}else{
                 		$parampatch = '[
                                 { "op": "remove", "path": "/tenant", "value": "" },
@@ -343,12 +349,24 @@ class RackNController extends Controller
 					$NetBoxController->UpdateStatusPubIP("active","null",$pubip_id);
 				}
 				$BMAASDBController->RemoveBMAASMachineAddr($uuid);
+                                $ipmival = $BMAASDBController->GetIPMIUsers($ipmiaddr);
+                                $BMAASDBController->RemoveIPMIUsers($ipmival->id);
+                                $ILOController->RemoveILOUser($ipmiaddr,$ipmival->user_ilo_id);				
 				
 			}
 			if($wf == "ubuntu-20"){
-				$parampatch='[{ "op": "remove", "path": "/access-ssh-root-mode", "value": "" }]';
+				$parampatch='[
+					{ "op": "remove", "path": "/access-ssh-root-mode", "value": "" }
+				]';
 				$this->PatchMachinesParam($uuid,$parampatch);
 			}
+                        if($wf == "ubuntu-18"){
+                                $parampatch='[
+                                        { "op": "remove", "path": "/operating-system-disk", "value": "" }
+                                ]';
+                                $this->PatchMachinesParam($uuid,$parampatch);
+                        }
+			
 		}
 		return redirect()->action('RackNController@GetListMachines');
 		
@@ -485,7 +503,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         //exit;
                 }
 
-                curl_setopt($ch, CURLOPT_URL, $this->swagger_url.'/'."machines?tenant=$tenant&Workflow=centos7-base&Workflow=centos8-base&Workflow=ubuntu-18&Workflow=ubuntu-20");
+                curl_setopt($ch, CURLOPT_URL, $this->swagger_url.'/'."machines?tenant=$tenant&Workflow=centos7-base&Workflow=centos8-base&Workflow=ubuntu-18&Workflow=ubuntu-20&Workflow=rhel-server-7-installation&Workflow=rhel-server-8-dvd-installation&Workflow=debian10-base");
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
                 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
@@ -595,7 +613,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                 $tenantget = $BMAASDBController->GetTenantbyUser($user->id);
                 $tenant =  $tenantget->tenant_name;
 		$ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $this->swagger_url.'/'."machines?tenant=$tenant&Workflow=centos7-base&Workflow=centos8-base&Workflow=ubuntu-18&Workflow=ubuntu-20");
+                curl_setopt($ch, CURLOPT_URL, $this->swagger_url.'/'."machines?tenant=$tenant&Workflow=centos7-base&Workflow=centos8-base&Workflow=ubuntu-18&Workflow=ubuntu-20&Workflow=rhel-server-7-installation&Workflow=rhel-server-8-dvd-installation&Workflow=debian10-base");
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
                 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
@@ -1383,7 +1401,8 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
                                         $params[0] = $uuid;
                                         $params[1] = $workflow;
-                                        $params[2] = $tenantget->tenant_id;
+					$params[2] = $tenantget->tenant_id;
+					$params[3] = 0;
                                         $BMAASDBController->AddBMAASWF($params);
 					
 
@@ -1420,9 +1439,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$NetBoxController = new NetBoxController;
 		$BMAASDBController = new BMAASDBController;
 		$BCFController = new BCFController;
+		$ILOController = new ILOController;
 		$tenantget = $BMAASDBController->GetTenantbyUser($user->id);
 		
-                $tenant =  $tenantget->tenant_name;
+		$tenant =  $tenantget->tenant_name;
+		$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
 		//$tenant = request()->segment(1);
 		$workflow = $request->input('selectos');
 		$hostname = $request->input('hostname');
@@ -1432,6 +1453,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$raid = $request->input('raidbare');
 		$pubiparr['address']="";
 		$uuid = $this->GetAvailableMachine($serverspek);
+		$ipmiaddr = $this->GetMachineIPMIAddr($uuid);
 		if(empty($uuid)){
 			return redirect("listmachines")->with('errorMessageDuration', "$serverspek Machine not Available");		
 		}else{
@@ -1449,6 +1471,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		if ($networkexist == null){
 			$tenantdb = $BMAASDBController->GetTenantID($tenant);
 			$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
+			$NetBoxController->UpdateStatusPrefix("reserved",$NBtenantid,$prefixarr['id']);
 			$tenantdb->tenant_id;
 			$networkinfo[0]=$tenantdb->tenant_id;
 			$networkinfo[1]=$prefixarr['id'];
@@ -1511,7 +1534,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$longprivateip = $lastip->ip_address+1;
 			$privateip = long2ip($longprivateip);
 		}*/
-		$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
+		//$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
 		//$prefix = explode("/", $prefixarr['prefix']);
 		//$privateip=$prefix[0];
 		$subnet="24";
@@ -1522,6 +1545,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		//$this->PatchMachinesParam($uuid,$parampatch);
                 if (isset($pubipcheck)) {
 			$pubiparr = $NetBoxController->GetAvailablePubIP();
+			$NetBoxController->UpdateStatusPubIP("reserved",$NBtenantid,$pubiparr['id']);
 			//$pubipexplode = explode("/", $pubip['gateway']);
 			//$pubgw = $pubipexplode[0];
 			$prefixval = $NetBoxController->GetPrefixFromIPAdd($pubiparr['address']);
@@ -1771,10 +1795,17 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$this->PatchMachinesParam($uuid,$raidparam);
 		if($workflow == 'ubuntu-20'){
                         $parampatch = '[
-                                        { "op": "add", "path": "/access-ssh-root-mode", "value": "no" }
+					{ "op": "add", "path": "/access-ssh-root-mode", "value": "yes" }
                                         ]';
                         $this->PatchMachinesParam($uuid,$parampatch);
 		}
+                if($workflow == 'ubuntu-18'){
+                        $parampatch = '[
+                                        { "op": "add", "path": "/operating-system-disk", "value": "sdb" }
+                                        ]';
+                        $this->PatchMachinesParam($uuid,$parampatch);
+                }
+		
 		$statuswf = $this->AssignWorkflow($uuid,$workflow);
                 $addnetworkinfo[0]=$networkid;
                 $addnetworkinfo[1]=$privateip;
@@ -1782,10 +1813,10 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$addnetworkinfo[3]=$pubiparr['address'];
 		if ($statuswf == 200){
 			if ($networkexist == null){
-				$NetBoxController->UpdateStatusPrefix("reserved",$NBtenantid,$prefixarr['id']);
+				//$NetBoxController->UpdateStatusPrefix("reserved",$NBtenantid,$prefixarr['id']);
 			}
 			if (isset($pubipcheck)){
-				$NetBoxController->UpdateStatusPubIP("reserved",$NBtenantid,$pubiparr['id']);
+				//$NetBoxController->UpdateStatusPubIP("reserved",$NBtenantid,$pubiparr['id']);
 			}
 			$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
 			$BCFController->AddInterfaceGroup($tenant."-baremetal",$vlan,$ifgroup->ifgroup_uplink,$user);
@@ -1793,7 +1824,9 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$params[0] = $uuid;
 			$params[1] = $workflow;
 			$params[2] = $tenantget->tenant_id;
+			$params[3] = "NULL";
 			$BMAASDBController->AddBMAASWF($params);
+			$ILOController->CreateILOUser($ipmiaddr,$ifgroup->ipmi_console_hostname);
 		}
 		//return redirect()->action('RackNController@GetListMachines', ['tenantval' => $tenant]);
 		return redirect()->action('RackNController@GetListMachines');
@@ -1849,6 +1882,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         $networkinfo[1]=$prefixarr['id'];
                         $networkinfo[2]="baremetal";
 			$networkid = $BMAASDBController->AddBMAASTenantNetwork($networkinfo);
+			$prefix = explode("/", $prefixarr['prefix']);
                         $sub = new SubnetCalculatorController($prefix[0],$prefix[1] );
 			$privategw = $sub->getMaxHost();
 			$privateip = $sub->getMinHost();
@@ -2069,7 +2103,8 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
 			$params[0] = $uuid;
                         $params[1] = "image-deploy";
-                        $params[2] = $tenantget->tenant_id;
+			$params[2] = $tenantget->tenant_id;
+			$params[3] = "NULL";
                         $BMAASDBController->AddBMAASWF($params);
 
                 }
@@ -2081,6 +2116,9 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		//$tenant = "AA99999";
 		$user = Auth::User();
 		$BMAASDBController = new BMAASDBController;
+                $NetBoxController = new NetBoxController;
+                $BCFController = new BCFController;
+		
 		$tenantget = $BMAASDBController->GetTenantbyUser($user->id);
                 $tenant =  $tenantget->tenant_name;
 		$esxihostname = "esxi01";
@@ -2096,6 +2134,51 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$vccluster = $tenant."-Cluster";//$request->input('vccluster');
 		$vcdatacenter = $tenant."-DC";//$request->input('vcdatacenter');
 		$datastoresize = $request->input('dssize');
+		$networkexist = $BMAASDBController->CheckTenantNetwork($tenant,"baremetal");
+                if ($networkexist == null){
+                        $tenantdb = $BMAASDBController->GetTenantID($tenant);
+                        $prefixarr = $NetBoxController->GetAvailablePrefix("Private");
+                        $tenantdb->tenant_id;
+                        $networkinfo[0]=$tenantdb->tenant_id;
+                        $networkinfo[1]=$prefixarr['id'];
+                        $networkinfo[2]="baremetal";
+			$networkid = $BMAASDBController->AddBMAASTenantNetwork($networkinfo);
+			$prefix = explode("/", $prefixarr['prefix']);
+                        $sub = new SubnetCalculatorController($prefix[0],$prefix[1] );
+                        $privategw = $sub->getMaxHost();
+			$privateip = $sub->getMinHost();
+                        $systemtenantint = $BCFController->SystemTenantInterface($user);
+                        $segmentint="";
+                        if($systemtenantint = 204 or $systemtenantint == 100){
+                                $segment = $BCFController->CreateSegment($tenant."-baremetal",$user);
+                        }
+                        if($segment == 204 or $segment == 100){
+                                //$BCFController->AddInterfaceGroup($prefixarr['vlan']);
+                                $segmentint = $BCFController->CreateSegmentInterface($tenant."-baremetal",$user);
+                        }
+                        if($segmentint == 204 or $segmentint == 100){
+                                $segmentintip = $BCFController->CreateSegmentInterfaceIP($privategw,$tenant."-baremetal",$user);
+                                $BCFController->ConfigureStaticRoute($prefixarr['prefix'],$user);
+                        }
+			
+		}else{
+                        $networkinfo = $BMAASDBController->GetTenantNetworkInfo($tenant,"baremetal");
+                        $networkid = $networkinfo->id;
+                        $prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
+                        $lastip = $BMAASDBController->GetLastPrivateIP($networkinfo->netbox_prefix_id);
+                        if($lastip->ip_address == null){
+                                $prefix = explode("/", $prefixarr['prefix']);
+                                $longprivateip=ip2long($prefix[0])+1;
+                                $privateip = long2ip($longprivateip);
+                        }else{
+                                $longprivateip = $lastip->ip_address+1;
+                                $privateip = long2ip($longprivateip);
+                        }
+                        $ipexplode=explode(".",$privateip);
+                        $strcount=strlen($ipexplode[3]);
+                        $privategw=substr_replace($privateip,"254",-$strcount);
+
+		}		
      		//$alamat = $request->input('alamat');
         	$jsonparam='{
     				"Validated": true,
@@ -2110,34 +2193,31 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
     				"Endpoint": "",
     				"Bundle": "",
     				"Partial": false,
-    				"Name": "'.$this->tenant.'-Profile",
+    				"Name": "'.$tenant.'-Profile",
     				"Description": "",
     				"Documentation": "",
     				"Params": {
-      					"gio-private/bcf-iscsi-ifgroup": "Fujitsu0.16-dvs",
       					"gio-private/bcf-iscsi-vlan": 201,
-      					"gio-private/tenant": "'.$this->tenant.'",
-      					"gio-private/bcf-vc-ifgroup": "Fujitsu0.16-Mngt",
+      					"gio-private/tenant": "'.$tenant.'",
       					"gio-private/bcf-vcenter-vlan": '.$vcvlan.',
       					"gio-private/dns_nameserver1": "172.16.10.52",
       					"gio-private/esxi-ip": "'.$esxiip.'",
       					"gio-private/internal-vlan": "'.$internalvlan.'",
       					"gio-private/iscsi-network": "'.$iscsinetwork.'",
-      					"gio-private/nimble-volume-name": "'.$this->tenant.'Vol",
+      					"gio-private/nimble-volume-name": "'.$tenant.'Vol",
       					"gio-private/nimble-volume-size": '.$datastoresize.',
       					"gio-private/ntp_server_ip": "172.16.10.6",
       					"gio-private/vcenter_appliance_deployment_option": "tiny",
-      					"gio-private/vcenter_appliance_name": "'.$this->tenant.'.biznetgio.local",
+      					"gio-private/vcenter_appliance_name": "'.$tenant.'.biznetgio.local",
       					"gio-private/vcenter_cluster": "'.$vccluster.'",
       					"gio-private/vcenter_datacenter": "'.$vcdatacenter.'",
       					"gio-private/vcenter_ip": "'.$vcenterip.'",
       					"gio-private/vcenter_network_gateway": "'.$vcgateway.'",
       					"gio-private/vcenter_network_prefix": "24",
-      					"gio-private/vcenter_network_system_name": "'.$this->tenant.'.biznetgio.local",
+      					"gio-private/vcenter_network_system_name": "'.$tenant.'.biznetgio.local",
       					"gio-private/vcenter_sso_domain-name": "vsphere.local",
 					"gio-private/vcenter_sso_password" : "'.$vcenterpass.'",
 					"gio-private/vcenter_password" : "'.$vcenterpass.'",
-      					"gio-private/esxi-password": "'.$esxipass.'"
     				},
     				"Profiles": []
 		}';
@@ -2189,7 +2269,9 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 					"gio-private/esxi-ip":"'.$esxiip.'",
 					"gio-private/esxi-netmask":"255.255.255.0",
 					"gio-private/esxi-password":"'.$esxipass.'",
-					"gio-private/bcf-vcenter-vlan": '.$vcvlan.'
+					"gio-private/bcf-vcenter-vlan": '.$vcvlan.',
+					"gio-private/bcf-iscsi-ifgroup": "Fujitsu0.16-dvs",
+					"gio-private/bcf-vc-ifgroup": "Fujitsu0.16-Mngt"
 				},
                                 "Profiles": []
 		}';
@@ -2492,6 +2574,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 					$this->PatchMachinesParam($uuid,$paramvmname);
 					$profileparam='[{ "op": "add", "path": "/Profiles", "value": ["'.$tenant.'-Cluster"] }]';
 					$this->PatchMachinesProfiles($uuid,$profileparam);				
+					$params[0] = $uuid;
+                                        $params[1] = "kub-install-cluster";
+					$params[2] = $tenantget->tenant_id;
+					$params[3] = 1;
+                                        $BMAASDBController->AddBMAASWF($params);
+
 					$returninfo[$i]['httpcode']= $this->AssignWorkflow($uuid,"kub-install-cluster");
 					$returninfo[$i]['machineuuid']=$uuid;
 					//return $returninfo;

@@ -41,6 +41,7 @@ Route::get('/about-us', function () {
 Route::get('/support', function () {
     return view('support');
 });
+Route::get('/ilo', 'ILOController@CreateILOUser')->middleware('auth');
 Route::get('/contact', 'ContactController@contact')->middleware('auth');
 Route::post('/contact', 'ContactController@contactPost')->name('contactPost')->middleware('auth');
 Route::get('/halo', function () {

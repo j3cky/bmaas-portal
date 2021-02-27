@@ -341,6 +341,32 @@ class BMAASDBController extends Controller
                 );
 	}
 
+        Public function AddIPMIUsers($params){
+                DB::table('ipmi_users')->insert(
+                        ['ipmi_ip' => "$params[0]",'user_ilo_id' => $params[1]]
+                );
+        }
+	
+
+        Public function RemoveIPMIUsers($id){
+                $current_date = date('Y-m-d H:i:s');
+                DB::table('ipmi_users')
+                        ->where('id', $id)
+                        ->where('destroyed', NULL)
+                        ->update(['destroyed' => $current_date]);
+
+        }
+
+        public function GetIPMIUsers($ipmi_ip){
+                //$tenant = request()->segment(1);
+                return DB::table('ipmi_users')
+                        ->where('ipmi_ip',$ipmi_ip)
+                        ->where('destroyed', NULL)
+                        ->first();
+                //return view('sshkey', ['sshkeys' => $sshkey]);
+        }
+
+
 	Public function RemoveBMAASKubCluster($tenant_id){
                 $current_date = date('Y-m-d H:i:s');
                 DB::table('tenant_kubernetes_cluster')

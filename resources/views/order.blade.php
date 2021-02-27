@@ -310,8 +310,8 @@ input:disabled{
                         <!--div class="form-group"-->
 
                         				<select class="form-control select2" style="width: 100%;" name="selectrhel">
-                                				<option value="rhel-server-8-dvd-install">Redhat 8</option>
-                                				<option value="rhel-server-7-install">Redhat 7</option>
+                                				<option value="rhel-server-8-dvd-installation">Redhat 8</option>
+                                				<option value="rhel-server-7-installation">Redhat 7</option>
                         				</select>
                         <!--/div-->			</p>
 							</label>
@@ -336,7 +336,7 @@ input:disabled{
                         <!--div class="form-group"-->
 
                         				<select class="form-control select2" style="width: 100%;" name="selectdeb">
-                                				<option value="debian-base">Debian 10</option>
+                                				<option value="debian10-base">Debian 10</option>
                                 				<option value="debian-base">Debian 9</option>
                         				</select>
                         <!--/div-->			</p>
