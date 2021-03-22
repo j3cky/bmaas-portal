@@ -15,5 +15,7 @@ $connection = ssh2_connect('172.16.10.30', 22);
 ssh2_auth_password($connection, 'admin', 'admin');
 
 $stream = ssh2_exec($connection, 'configure');*/
-shell_exec ('sshpass -p admin ssh -t -t admin@172.16.10.30 < /var/www/html/bmaas/public/ext/ssh.txt');
+//shell_exec ('sshpass -p admin ssh -t -t admin@172.16.10.30 < /var/www/html/bmaas/public/ext/ssh.txt');
+shell_exec ("sshpass -p admin ssh -t -t admin@172.16.10.30 'configure'");
+
 

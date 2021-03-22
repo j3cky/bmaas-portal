@@ -13,6 +13,12 @@
 
 @section('content')
 
+@if (!empty(session('errorMessageDuration')))
+         <div class="alert alert-danger">
+             <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+             {{ session('errorMessageDuration') }}
+         </div>
+@endif
 
 
 @if (!empty(session('KubMessageDuration')))
@@ -20,6 +26,20 @@
              <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
              Kubernetes Cluster Deployment in Progress, you will be notified when deployment has complete or check status on 
 <a class="nav-link" href="#container" data-toggle="tab">Container Tab</a>
+         </div>
+@endif
+@if (!empty(session('LinMessageDuration')))
+         <div class="alert alert-info">
+             <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+             BareMetal Server Deployment in Progress, you will be notified when deployment has complete or check status on
+<a class="nav-link" href="#linux" data-toggle="tab">Linux Tab</a>
+         </div>
+@endif
+@if (!empty(session('WinMessageDuration')))
+         <div class="alert alert-info">
+             <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+             Windows Server Deployment in Progress, you will be notified when deployment has complete or check status on
+<a class="nav-link" href="#windows" data-toggle="tab">Windows Tab</a>
          </div>
 @endif
 
@@ -50,6 +70,11 @@
         		@include('listkubtable')
         	</div>
 	</div>
+        <div class="tab-pane" id="vsphere">
+                <div id="kubtable" >
+                        @include('listprivtable')
+                </div>
+        </div>
 </div>
 
 
@@ -150,20 +175,41 @@ function ActionWin(){
                 }
         }
     }
-    
-    
-    //alert(action);
-    //if(action == "redeploy"){
-    //    var action = "/listmachines/action/redeploy";
-       /// alert (action);
-    //    document.getElementById("machineactionwin").action = action;
-    //    document.getElementById("machineactionwin").submit();
-    //}else if(action == "unsubbare"){
-    //    var action = "/listmachines/action/unsubbare";
-    //    document.getElementById("machineactionwin").action = action;
-    //    document.getElementById("machineactionwin").submit();
-    //}
+}
 
+function ActionPriv(){
+        //alert("test");
+    var s = window.location.href;
+    var splitByForwardSlash = s.split('/');
+    var tenant = splitByForwardSlash[splitByForwardSlash.length-2];
+    var action = document.getElementById('privaction').value;
+    var checked=false;
+    var elements = document.getElementsByName("checkpriv[]");
+    for(var i=0; i < elements.length; i++){
+        if(elements[i].checked) {
+                checked = true;
+        }
+    }
+    if (checked) {
+        if(action == "redeploy"){
+                var action = "/listmachines/action/redeploy";
+                if(confirm("Confirm to Redeploy?")){
+                //alert (action);
+                        document.getElementById("frmprivaction").action = action;
+                        document.getElementById("frmprivaction").submit();
+                }else{
+                        return false;
+                }
+        }else if(action == "unsubbare"){
+                if(confirm("Confirm to Terminate?")){
+                        var action = "/listmachines/action/unsubpriv";
+                        document.getElementById("frmprivaction").action = action;
+                        document.getElementById("frmprivaction").submit();
+                }else{
+                        return false;
+                }
+        }
+    }
 }
 
 
@@ -175,6 +221,9 @@ function ActionKub(){
         if(elements[i].checked) {
                 checked = true;
         }
+    }
+    if(action == "addworker"){
+	$('#modal-addworker').modal('show')	
     }
     if(action == "unsubkub"){
 	    var action = "/listmachines/action/unsubkub";

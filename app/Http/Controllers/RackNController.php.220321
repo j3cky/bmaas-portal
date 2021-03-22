@@ -940,8 +940,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			'selectkubha' => $request->selectkubha,
 			'workernum' => $request->workernum,
 			'serverspek' => $request->serverspek,
-			'pubipcheck' => $request->pubipcheckcon,
-			'selectcluster' => $request->selectcluster
+			'pubipcheck' => $request->pubipcheckcon
                 );
               	$BMAASDBController = new BMAASDBController;
             //$BMAASDBController->BMAASQueue($objectvalue);
@@ -967,13 +966,6 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$tenantget = $BMAASDBController->GetTenantbyUser($user->id);
 		$tenant =  $tenantget->tenant_name;
 		$workflow = "kub-install-cluster";
-                $cluster = $BMAASDBController->GetLastKubCluster($tenantget->tenant_id);
-                $clustername = $cluster->profile_name;
-                if(is_null($clustername)){
-                        $clustername = $tenant."-C00001";
-                }else{
-                        ++$clustername;
-                }		
 		/*$sshkey = $request->input('sshkeycon');
 		$selectkubha = $request->input('selectkubha');
 		$workernum = $request->input('workernum');
@@ -985,7 +977,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                 $workernum = $request->workernum;
                 $serverspek = $request->serverspek;
                 $pubipcheck = $request->pubipcheck;
-		$selectcluster = $request->selectcluster; 
+		 
 
 		//if($workernum == "")$workernum=1;
 		//$clustervlan = 202;
@@ -1050,7 +1042,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                         $checkcluster = $BMAASDBController->CheckBMAASKubCluster($tenantget->tenant_id);
 			if(empty($checkcluster)){
 				$params[0] = $tenantget->tenant_id;
-				$params[1] = $clustername; 
+				$params[1] = "$tenant-Cluster"; 
                                 $BMAASDBController->AddBMAASKubCluster($params);
                         }
 			
@@ -1074,14 +1066,14 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$checkcluster = $BMAASDBController->CheckBMAASKubCluster($tenantget->tenant_id);
 			if(empty($checkcluster)){
                                 $params[0] = $tenantget->tenant_id;
-                                $params[1] = $clustername;				
+                                $params[1] = "$tenant-Cluster";				
 				$BMAASDBController->AddBMAASKubCluster($params);
 				$BCFController->AddInterfaceGroup($tenant."-baremetal",$prefixarr['vlan'],"CVC001",$user);
 			}
 
 
                 }
-		if ($selectcluster == "newcluster"){
+		if ($pubnetworkexist == null){
                         $tenantdb = $BMAASDBController->GetTenantID($tenant);
 			$pubprefixarr = $NetBoxController->GetAvailablePrefix("Public");
 	                $pubaddrexplode = explode("/", $pubprefixarr['prefix']);
@@ -1103,12 +1095,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$pubnetworkid = $BMAASDBController->AddBMAASTenantPublicNetwork($pubnetworkinfo);
                         $addpubnetworkinfo[0]=$pubnetworkid;
                         $addpubnetworkinfo[1]=$metallbrange[0]['id'];
-                        $addpubnetworkinfo[2]=$clustername;
+                        $addpubnetworkinfo[2]="$tenant-Cluster";
                        	$addpubnetworkinfo[3]=$metallbrange[0]['address'];
 			$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);			
                         $addpubnetworkinfo[0]=$pubnetworkid;
                         $addpubnetworkinfo[1]=$metallbrange[1]['id'];
-                        $addpubnetworkinfo[2]=$clustername;
+                        $addpubnetworkinfo[2]="$tenant-Cluster";
                         $addpubnetworkinfo[3]=$metallbrange[1]['address'];
                         $BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
 			$segment = $BCFController->CreateSegment($tenant.'-'.$pubprefixarr['vlan'],$user);
@@ -1242,14 +1234,14 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                 "Endpoint": "",
                                 "Bundle": "",
                                 "Partial": false,
-                                "Name": "'.$clustername.'",
+                                "Name": "'.$tenant.'-Cluster",
                                 "Description": "",
                                 "Documentation": "",
 				"Params": {
-                                        "cluster/profile": "'.$clustername.'",
-                                        "etcd/cluster-profile": "'.$clustername.'",
-                                        "etcd/name": "'.$clustername.'",
-                                        "krib/cluster-profile": "'.$clustername.'",
+                                        "cluster/profile": "'.$tenant.'-Cluster",
+                                        "etcd/cluster-profile": "'.$tenant.'-Cluster",
+                                        "etcd/name": "'.$tenant.'-Cluster",
+                                        "krib/cluster-profile": "'.$tenant.'-Cluster",
                                         "krib/cluster-kubernetes-version": "v1.18.10",
 					"krib/cluster-crictl-version": "v1.18.0",
 					"krib/cluster-cni-version": "v0.8.7",
@@ -1408,7 +1400,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			]';*/
 				$uuid = $this->GetAvailableMachine($serverspek);
                 		$this->CreateProfile($jsonparam);
-                		$profilepatch='[{ "op": "add", "path": "/Profiles", "value": ["'.$clustername.'"] }]';
+                		$profilepatch='[{ "op": "add", "path": "/Profiles", "value": ["'.$tenant.'-Cluster"] }]';
                 		$this->PatchMachinesProfiles($uuid,$profilepatch);
 				$this->PatchMachinesParam($uuid,$parampatch);
 				$statuswf=$this->AssignWorkflow($uuid,$workflow);
@@ -1460,14 +1452,14 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                 "Endpoint": "",
                                 "Bundle": "",
                                 "Partial": false,
-                                "Name": "'.$clustername.'",
+                                "Name": "'.$tenant.'-Cluster",
                                 "Description": "",
                                 "Documentation": "",
                                 "Params": {
-                                        "cluster/profile": "'.$clustername.'",
-                                        "etcd/cluster-profile": "'.$clustername.'",
-                                        "etcd/name": "'.$clustername.'",
-                                        "krib/cluster-profile": "'.$clustername.'",
+                                        "cluster/profile": "'.$tenant.'-Cluster",
+                                        "etcd/cluster-profile": "'.$tenant.'-Cluster",
+                                        "etcd/name": "'.$tenant.'-Cluster",
+                                        "krib/cluster-profile": "'.$tenant.'-Cluster",
                                         "krib/cluster-kubernetes-version": "v1.18.10",
 					"krib/cluster-crictl-version": "v1.18.0",
 					"krib/container-runtime": "containerd",
@@ -1486,7 +1478,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                 "Profiles": []
 			}';
 	                $this->CreateProfile($jsonparam);
-        	        $profilepatch='[{ "op": "add", "path": "/Profiles", "value": ["'.$clustername.'"] }]';
+        	        $profilepatch='[{ "op": "add", "path": "/Profiles", "value": ["'.$tenant.'-Cluster"] }]';
 			for($i=0 ; $i<3; $i++){
 				//$ipcount++;
 				//$pubipcount++;

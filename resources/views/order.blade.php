@@ -337,7 +337,7 @@ input:disabled{
 
                         				<select class="form-control select2" style="width: 100%;" name="selectdeb">
                                 				<option value="debian10-base">Debian 10</option>
-                                				<option value="debian-base">Debian 9</option>
+                                				<option value="debian9-base">Debian 9</option>
                         				</select>
                         <!--/div-->			</p>
 							</label>
@@ -389,7 +389,7 @@ input:disabled{
 
                         				<select class="form-control select2" style="width: 100%;" name="selectoswin" data-placeholder="Select OS">
                                 				<option value="Win2019uefi.img.xz">Windows 2019</option>
-                                				<option value="Win2016.img.xz">Windows 2016</option>
+                                				<option value="Win2016uefi.img.xz">Windows 2016</option>
                         				</select>
                         <!--/div-->			</p>
 							</label>
@@ -411,7 +411,8 @@ input:disabled{
                                                                 <label for="sshkey" class="col-sm-2 col-form-label"><img src="icon-set/key2.png" width="20"/></a> Password</label>
                                                                 <div class="col-3">
                                                                         <input type="password" class="form-control" name="adminpass" id="adminpass" placeholder="Enter Administrator Password" style="width: 100%;"/>
-                                                                </div>
+								</div>
+
                                                         </div>
 
                   					<div class="form-group">
@@ -444,6 +445,20 @@ input:disabled{
 									<input type=button value='+' onclick='javascript:process(1)'>
 								</div>
 							</div>
+
+                                                        <div class="form-group row">
+								<label for="selectcluster" class="col-sm-2 col-form-label"><img src="icon-set/kube.png" width="20"/></a>Select Cluster</label>
+							<div class="col-3">
+							<select class="form-control select2"  name="selectcluster">
+                                                                @foreach ($profilenames as $propfilename => $row)
+                                                                        <option value="{{ $row->profile_name  }}">{{ $row->profile_name  }}</option>
+                                                                @endforeach
+
+								<option value="newcluster">New Cluster</option>
+                                                        </select>
+							</div>
+                                                        </div>
+
                   					<div class="form-group row">
                     						<label for="sshkey" class="col-sm-2 col-form-label"><img src="icon-set/key2.png" width="20"/></a> SSH Key</label>
 								<div class="col-3">
@@ -491,22 +506,34 @@ input:disabled{
                         							<p style="text-align:left;"><input type="checkbox" id="dstype" name="ostype" value="standard" autofocus="true"/>
                         							Standard Datastore Size GB<br></p>
                         							<p style="text-align:left;">
-                        							<div class="qty">
-                                							<span class="minusds bg-dark">-</span>
+                        							<!--div class="qty"-->
+                                							<!--span class="minusds bg-dark">-</span>
                                 							<input type="number" class="countds" name="dssize" value="500" style="width:100px; text-align: center;">
-                                							<span class="plusds bg-dark">+</span>
-                        							</div>
+											<span class="plusds bg-dark">+</span-->
+                                                                <div class="qty">
+                                                                        <input type=button value='-' onclick='javascript:processstdds(-100)'>
+                                                                        <input type=text size=5 id='stdds' name='stdds' value='100'>
+                                                                        <input type=button value='+' onclick='javascript:processstdds(100)'>
+                                                                </div>
+
+                        							<!--/div-->
                         							</p>
                     								</label>&nbsp;&nbsp;&nbsp;
                     								<label class="btn btn-info" style="width: 250px;">
                         							<p style="text-align:left;"><input type="checkbox" id="dstype" name="ostype" value="ssd" autofocus="true"/>
                         							SSD Datastore Size GB<br></p>
                         							<p style="text-align:left;">
-                        							<div class="qty">
+                        							<!--div class="qty">
                                 							<span class="minusds bg-dark">-</span>
                                 							<input type="number" class="countds" name="ssdsize" value="500" style="width:100px; text-align: center;">
                                 							<span class="plusds bg-dark">+</span>
-                        							</div>
+										</div-->
+                                                                <div class="qty">
+                                                                        <input type=button value='-' onclick='javascript:process_ssd_ds(-100)'>
+                                                                        <input type=text size=5 id='ssd_ds' name='ssd_ds' value='100'>
+                                                                        <input type=button value='+' onclick='javascript:process_ssd_ds(100)'>
+                                                                </div>
+
                         							</p>
                     								</label>
 		  							</div>
@@ -514,11 +541,29 @@ input:disabled{
 	      						</div>
                 					<div class="form-group row">
                      						<label for="esxicount" class="col-sm-2 col-form-label"><img src="icon-set/vmware.png" width="20"/></a> ESXi Count</label>
-                     						<div class="qty col-3">
+                     						<!--div class="qty col-3">
                         						<span class="minus bg-dark">-</span>
                         						<input type="number" class="count" name="esxicount" value="1" style="width:50px; text-align: center;">
                         						<span class="plus bg-dark">+</span>
-                    						</div>
+								</div-->
+                                                                <div class="qty">
+                                                                        <input type=button value='-' onclick='javascript:process_esxi(-1)'>
+                                                                        <input type=text size=5 id='esxicount' name='esxicount' value='1'>
+                                                                        <input type=button value='+' onclick='javascript:process_esxi(1)'>
+                                                                </div>
+							</div>
+                                                        <div class="form-group row">
+                                                                <label for="sshkey" class="col-sm-2 col-form-label"><img src="icon-set/key2.png" width="20"/></a>vCenter Password</label>
+                                                                <div class="col-3">
+                                                                        <input type="password" class="form-control" name="vcenterpass" id="vcenterpass" placeholder="Enter vCenter Password" style="width: 100%;"/>
+                                                                </div>
+                                                        </div>
+
+							<div class="form-group row">
+								<label for="sshkey" class="col-sm-2 col-form-label"><img src="icon-set/key2.png" width="20"/></a> Password</label>
+                                                                <div class="col-3">
+                                                                        <input type="password" class="form-control" name="esxipass" id="esxipass" placeholder="Enter Root Password" style="width: 100%;"/>
+                                                                </div>
 							</div>
               					</div>
             				</div>
@@ -718,6 +763,29 @@ function process(v){
     value+=v;
     document.getElementById('workernum').value = value;
 }
+function processstdds(v){
+    var value = parseInt(document.getElementById('stdds').value);
+    value+=v;
+    if(value >= 100){
+	    document.getElementById('stdds').value = value;
+    }
+}
+function process_ssd_ds(v){
+    var value = parseInt(document.getElementById('ssd_ds').value);
+    value+=v;
+    if(value >= 100){
+            document.getElementById('ssd_ds').value = value;
+    }
+}
+function process_esxi(v){
+    var value = parseInt(document.getElementById('esxicount').value);
+    value+=v;
+    if(value >= 1){
+            document.getElementById('esxicount').value = value;
+    }
+}
+
+
 </script>
 <!-- page script -->
 @stop	

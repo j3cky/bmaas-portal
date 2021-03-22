@@ -9,7 +9,7 @@ Here is an example on how to remote console to your server impi:<br><br>
 Password : {{ $password }}
 
 <pre>
-https://{{$hostname}}/irc.html?gui=true&lang=en <br>
+https://{{$hostname}}:444/irc.html?gui=true&lang=en <br>
 Username : {{ $username }} <br>
 Password : {{ $password }} <br>
 </pre>

@@ -341,6 +341,84 @@ class BCFController extends Controller
 
                 }
 	}
+	
+	public function ChangeInterfaceGroupMode($ifgroup,$mode){
+		$cookie = $this->Login();
+		$curl = curl_init();
+		$ifgroupget = $this->GetInterfaceGroupMode($ifgroup);
+		if($mode == "static"){
+			$ifgroupmode = str_replace("lacp-fallback-individual","static",$ifgroupget);
+		}else{
+			$ifgroupmode = str_replace("static","lacp-fallback-individual",$ifgroupget);
+		}
+		//echo $ifgroupmode
+		curl_setopt_array($curl, array(
+		  CURLOPT_PORT => "8443",
+		  CURLOPT_URL => "https://172.16.0.2:8443/api/v1/data/controller/applications/bcf/interface-group%5Bname%3D%22$ifgroup%22%5D",
+		  CURLOPT_RETURNTRANSFER => true,
+		  CURLOPT_ENCODING => "",
+		  CURLOPT_MAXREDIRS => 10,
+		  CURLOPT_TIMEOUT => 30,
+                  CURLOPT_SSL_VERIFYPEER => 0,
+                  CURLOPT_SSL_VERIFYHOST => 0,
+		  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		  CURLOPT_CUSTOMREQUEST => "PUT",
+		  CURLOPT_POSTFIELDS => $ifgroupmode,
+		  CURLOPT_HTTPHEADER => array(
+		    "Content-Type: application/json",
+		    "Cookie: session_cookie=$cookie",
+
+		  ),
+		));
+
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
+
+		curl_close($curl);
+
+		if ($err) {
+		  echo "cURL Error #:" . $err;
+		} else {
+		  //echo $response;
+		}
+	}
+
+	public function GetInterfaceGroupMode($ifgroup){
+                $cookie = $this->Login();
+                $curl = curl_init();
+
+                curl_setopt_array($curl, array(
+                  CURLOPT_PORT => "8443",
+                  CURLOPT_URL => "https://172.16.0.2:8443/api/v1/data/controller/applications/bcf/interface-group%5Bname%3D%22$ifgroup%22%5D",
+                  CURLOPT_RETURNTRANSFER => true,
+                  CURLOPT_ENCODING => "",
+                  CURLOPT_MAXREDIRS => 10,
+                  CURLOPT_TIMEOUT => 30,
+                  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		  CURLOPT_CUSTOMREQUEST => "GET",
+                  CURLOPT_SSL_VERIFYPEER => 0,
+                  CURLOPT_SSL_VERIFYHOST => 0,		  
+                  CURLOPT_POSTFIELDS => "",
+                  CURLOPT_HTTPHEADER => array(
+                    "Content-Type: application/json",
+                    "Cookie: session_cookie=$cookie",
+
+                  ),
+                ));
+
+                $response = curl_exec($curl);
+                $err = curl_error($curl);
+
+                curl_close($curl);
+
+                if ($err) {
+                  echo "cURL Error #:" . $err;
+                } else {
+                  return $response;
+                }
+
+	}
+
 	public function CreateSegmentInterfaceIP($cidr,$segmentname,$user){
                 //$user = Auth::User();
                 $BMAASDBController = new BMAASDBController;

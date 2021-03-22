@@ -53,17 +53,20 @@ Route::get('/irctest', 'RackNController@TestIRC')->middleware('auth');
 //    return view('testirc');
 //});
 
+Route::get('/testcluster/', 'RackNController@TestClusterProfile')->middleware('auth');
+Route::get('/testvc/', 'RackNController@DeleteVC')->middleware('auth');
 Route::get('/listmachines/', 'RackNController@GetListMachines')->middleware('auth');
 Route::get('/listmachineskub/', 'RackNController@ListKubMachines')->middleware('auth');
 Route::get('/listmachineswin/', 'RackNController@ListWinMachines')->middleware('auth');
 Route::get('/listmachineslin/', 'RackNController@ListLinMachines')->middleware('auth');
-Route::post('/{tenantval}/orderpage/ordergioprivate/process', 'RackNController@ProcessGioPrivateOrder')->middleware('auth');
+Route::post('/orderpage/ordergioprivate/process', 'RackNController@ProcessGioPrivateOrder')->middleware('auth');
 Route::post('/listmachines/action/redeploy', 'RackNController@RedeployMachine')->middleware('auth');
 Route::post('/listmachines/action/unsubbare', 'RackNController@UnsubscribeBareMetal')->middleware('auth');
+Route::post('/listmachines/action/unsubpriv', 'RackNController@UnsubGioPrivate')->middleware('auth');
 Route::post('/listmachines/action/unsubkub', 'RackNController@UnsubscribeKubCluster')->middleware('auth');
 //Route::post('/{tenantval}/orderpage/orderbaremetal/process', 'RackNController@ProcessBareMetalOrder')->middleware('auth');
-Route::post('/orderpage/orderbaremetal/process', 'RackNController@ProcessBareMetalOrder')->middleware('auth');
-Route::post('/orderpage/windows/process', 'RackNController@ProcessWindowsOrder')->middleware('auth');
+Route::post('/orderpage/orderbaremetal/process', 'RackNController@ProcessBareMetalJob')->middleware('auth');
+Route::post('/orderpage/windows/process', 'RackNController@ProcessWindowsJob')->middleware('auth');
 Route::post('/orderpage/kubernetes/process', 'RackNController@ProcessKubernetesJob')->middleware('auth');
 Route::post('/createtenant', 'BMAASDBController@CreateTenantBMAAS')->middleware('auth');
 Route::post('/sshkey/create', 'RackNController@SSHKeyCreate')->middleware('auth');
@@ -73,7 +76,7 @@ Route::get('{tenantval}/bcf', 'BCFController@Execute')->middleware('auth');
 Route::get('/listtenant', 'BMAASDBController@GetTenantList')->middleware('auth');
 Route::get('/orderpage', 'RackNController@OrderPage')->middleware('auth');
 Route::post('/subscribeservice', 'RackNController@SubscribeUser')->middleware('auth');
-
+Route::post('/listmachines/action/unsubkubserver', 'RackNController@DeleteKubernetesNode')->middleware('auth');
 //Route::get('ordergioprivate', (){
 //	 return view('welcome');
 //});
@@ -92,6 +95,14 @@ Auth::routes([
     'confirm'  => false,  // for additional password confirmations
     'verify'   => false,  // for email verification
 ]);
+
+
+//------ Billing --------//
+Route::resource('billing', 'BillingController');
+
+//----- Activity ---------//
+Route::resource('activity', 'ActivityController');
+
 
 Route::get('/home', 'HomeController@index')->name('home');
 Route::get('/', 'RackNController@GetListMachines')->middleware('auth');

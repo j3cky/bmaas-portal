@@ -40,8 +40,8 @@ class ILOController extends Controller
 
 		}
 	}
-	public function CreateILOUser($ipmiaddr,$hostname){
-		$user = Auth::User();
+	public function CreateILOUser($ipmiaddr,$hostname,$user){
+		//$user = Auth::User();
 		$BMAASDBController = new BMAASDBController();
 		//echo $user->email;
 		//exit;

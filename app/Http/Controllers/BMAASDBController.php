@@ -268,7 +268,19 @@ class BMAASDBController extends Controller
                 );
         }
 
-
+	public function GetMachinesList($tenantid){
+                return  DB::table('machine_workflow_info')
+                        ->select('machine_network_info.machine_uuid', 'machine_network_info.ip_address','machine_network_info.public_ip','machine_public_network_info.public_address','machine_workflow_info.workflow')
+                        ->leftJoin('machine_public_network_info', function ($join) {
+                                $join->on('machine_network_info.machine_uuid', '=', 'machine_public_network_info.machine_uuid')
+                                        ->whereNull('machine_public_network_info.destroyed');
+                                        //->on('machine_public_network_info.destroyed','is',NULL);
+                        })
+                        //->leftJoin('machine_public_network_info', 'machine_network_info.machine_uuid', '=', 'machine_public_network_info.machine_uuid')
+                        ->where('machine_network_info.tenant_id',$tenantid)
+                        ->where('machine_network_info.destroyed',NULL)
+			->get();
+	}
 	public function GetMachinesIP($uuid){
 		return  DB::table('machine_network_info')
 			->select('machine_network_info.machine_uuid', 'machine_network_info.ip_address','machine_network_info.public_ip','machine_public_network_info.public_address')
@@ -337,7 +349,7 @@ class BMAASDBController extends Controller
 
         Public function AddBMAASKubCluster($params){
                 DB::table('tenant_kubernetes_cluster')->insert(
-                        ['tenant_id' => $params[0],'profile_name' => $params[1]]
+                        ['tenant_id' => $params[0],'profile_name' => $params[1],'public_network_info_id' => $params[2]]
                 );
 	}
 
@@ -382,6 +394,23 @@ class BMAASDBController extends Controller
 			->where('destroyed', NULL)
                         ->first();	
         }	
+
+        Public function GetBMAASKubCluster($tenant_id){
+                return DB::table('tenant_kubernetes_cluster')
+                        ->where('tenant_id',$tenant_id)
+                        ->where('destroyed', NULL)
+                        ->get();
+        }
+
+
+	public function GetLastKubCluster($tenant_id){
+                return DB::table('tenant_kubernetes_cluster')
+			->select(DB::raw('MAX(profile_name) as profile_name'))
+			->where('tenant_id',$tenant_id)
+			->where('destroyed', NULL)
+                        ->first();
+
+	}
 
         Public function RemoveBMAASWF($uuid){
                 $current_date = date('Y-m-d H:i:s');
