@@ -169,6 +169,13 @@ input:disabled{
     </div>
 @enderror
 
+@error ('esxipass')
+    <div class="alert alert-danger">
+        vCenter and ESXiPasswords must have min 8 characters from at least three character classes. (Uppercase characters (A-Z), Lowercase characters (a-z), Digits (0-9), special characters @$!%*#?&.
+    </div>
+@enderror
+
+
 <form class="form-horizontal" action="" method="POST" id="order" name="order">
 	<input type = "hidden" name = "_token" value = "<?php echo csrf_token() ?>">
 	
@@ -491,7 +498,7 @@ input:disabled{
 
                         					<select class="form-control select2" style="width: 100%;" name="selectvsphere">
                                 					<option value="vsphere70">vSphere 7</option>
-                                					<option value="vsphere67">vSphere 6.7</option>
+                                					<!--option value="vsphere67">vSphere 6.7</option-->
                         					</select>
                         <!--/div-->				</p>
 								</label>

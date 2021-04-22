@@ -49,7 +49,12 @@ class BMAASDBController extends Controller
                         ->where('destroyed', NULL)
                         ->first();
         }
-
+	public function CheckTenantVPN($tenant_id){
+                return DB::table('tenant_vpn')
+                        ->where('tenant_id', $tenant_id)
+                        ->where('destroyed', NULL)
+                        ->first();
+	}
 
 	public function CheckTenantNetwork($tenant,$type){
 		return DB::table('tenant')
@@ -98,7 +103,19 @@ class BMAASDBController extends Controller
                                 ])
                                 ->first();
                 //return DB::table('network_info')->where('tenant_id', $tenant)->exists();
-        }
+	}
+	public function GetClusterPublicNetworkInfo($profilename){
+
+		return DB::table('tenant_kubernetes_cluster')
+				->select('public_network_info.id','public_network_info.netbox_prefix_id','tenant_kubernetes_cluster.profile_name','tenant_kubernetes_cluster.public_network_info_id','public_network_info.tenant_id')
+                                ->join('public_network_info', 'public_network_info.id', '=', 'tenant_kubernetes_cluster.public_network_info_id')
+                                ->where([
+                                        ['tenant_kubernetes_cluster.profile_name', $profilename],
+                                        ['public_network_info.destroyed', NULL]
+                                ])
+                                ->first();
+
+	}
 
 
         public function GetLastPrivateIP($prefixid){
@@ -173,6 +190,12 @@ class BMAASDBController extends Controller
                 );
 	}
 
+	Public function AddBMAASVPN($info){
+                DB::table('tenant_vpn')->insert(
+                        ['tenant_id' => $info[0],'network_info_id' => $info[1]]
+                );
+        }	
+
         Public function BMAASQueue($request){
                 DB::table('testqueue')->insert(
                         ['queue_name' => "$request->name",'queue_pass' => "$request->pass"]
@@ -239,10 +262,10 @@ class BMAASDBController extends Controller
                         ->where('destroyed', NULL)
                         ->update(['destroyed' => $current_date]);
 	}
-        Public function RemoveBMAASPubNetwork($tenant){
+        Public function RemoveBMAASPubNetwork($pubnetworkid){
                 $current_date = date('Y-m-d H:i:s');
                 DB::table('public_network_info')
-                        ->where('tenant_id', $tenant)
+                        ->where('id', $pubnetworkid)
                         ->where('destroyed', NULL)
                         ->update(['destroyed' => $current_date]);
 	}
@@ -281,6 +304,16 @@ class BMAASDBController extends Controller
                         ->where('machine_network_info.destroyed',NULL)
 			->get();
 	}
+
+	public function GetvCenter($tenantid,$uuid){
+		return  DB::table('network_info')
+			->join('machine_network_info', 'network_info.id', '=', 'machine_network_info.network_info_id')
+			->where('network_info.tenant_id',$tenantid)
+			->where('machine_network_info.machine_uuid',$uuid)
+			->where('machine_network_info.destroyed',NULL)
+			->first();
+	}
+
 	public function GetMachinesIP($uuid){
 		return  DB::table('machine_network_info')
 			->select('machine_network_info.machine_uuid', 'machine_network_info.ip_address','machine_network_info.public_ip','machine_public_network_info.public_address')
@@ -379,19 +412,21 @@ class BMAASDBController extends Controller
         }
 
 
-	Public function RemoveBMAASKubCluster($tenant_id){
+	Public function RemoveBMAASKubCluster($tenant_id,$profile_name){
                 $current_date = date('Y-m-d H:i:s');
                 DB::table('tenant_kubernetes_cluster')
-                        ->where('tenant_id', $tenant_id)
+			->where('tenant_id', $tenant_id)
+			->where('profile_name',$profile_name)
                         ->where('destroyed', NULL)
                         ->update(['destroyed' => $current_date]);
 
         }
 	
-	Public function CheckBMAASKubCluster($tenant_id){
+	Public function CheckBMAASKubCluster($tenant_id,$clustername){
                 return DB::table('tenant_kubernetes_cluster')
 			->where('tenant_id',$tenant_id)
 			->where('destroyed', NULL)
+			->where('profile_name', $clustername)
                         ->first();	
         }	
 
@@ -418,5 +453,12 @@ class BMAASDBController extends Controller
                         ->where('machine_uuid', $uuid)
 			->where('destroyed', NULL)
                         ->update(['destroyed' => $current_date]);
+        }
+
+        public function GetActivityAudit($uuid){
+                return DB::table('activity_audit')
+                        ->where('tenant_id',$tenant_id)
+                        ->where('destroyed', NULL)
+                        ->get();
         }
 }

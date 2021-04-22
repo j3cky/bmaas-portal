@@ -21,199 +21,26 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse ($logs as $log )
                             <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
+                                <td>{{ $log ->uuid }}</td>
+                                <td>{{ $log ->action }}</td>
+                                <td>{{ $log ->start_time }}</td>
+                                <td>{{ $log ->tenant_id }}</span></td>
+                                <td>{{ $log ->message }}</td>
+                            </tr>
+                                
+                            @empty
+                            
+                            <td colspan="6" style="text-align: center">empty logs</td>
+                            
+                            @endforelse
+                            <tr>
+                                <td>Create Linux Server</td>
                                 <td>Create Linux Server</td>
                                 <td>Feb. 24, 2021, 1:29 a.m</td>
                                 <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
                                 <td>Success</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create K8b Container</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Failure</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr>
-                            <tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
-                            </tr><tr>
-                                <td>req-2b079833-b4ba-4b22-b0ca-2bbc6c9b8591</td>
-                                <td>Create Linux Server</td>
-                                <td>Feb. 24, 2021, 1:29 a.m</td>
-                                <td>be1b643ad8201c89f9e681361ba5ca8cb11ed52a4c90396e7fd8fbdba142a400</span></td>
-                                <td>Success.</td>
                             </tr>
 
 

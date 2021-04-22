@@ -411,8 +411,10 @@ class NetBoxController extends Controller
                 } else {
 			$val = json_decode($response);
 			for($i=0;$i<$limit;$i++){
-                        	$result[$i]['id']=$val->results[$i]->id;
-				$result[$i]['address']=$val->results[$i]->address;
+				if(count($val->results) > 0){
+                        		$result[$i]['id']=$val->results[$i]->id;
+					$result[$i]['address']=$val->results[$i]->address;
+				}
 			}
                         return $result;
                 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Activity;
 
 class ActivityController extends Controller
 {
@@ -13,7 +14,11 @@ class ActivityController extends Controller
      */
     public function index()
     {
-        return view('pages.activity.index');//
+        $logs = Activity::all();
+
+        return view('pages.activity.index')->with([
+            'logs' => $logs
+        ]);
     }
 
     /**

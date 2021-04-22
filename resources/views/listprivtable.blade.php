@@ -12,7 +12,8 @@
                 <th>Name</th>
                 <th>UUID</th>
                 <th>Private Address</th>
-                <th>Public Address</th>
+		<th>Public Address</th>
+		<th>vCenter Address</th>
                 <th>Workflow</th>
                 <th>Profiles</th>
                 <th>Status</th>
@@ -25,7 +26,8 @@
                 <td style="font-size: 14px">{{$row->Name}}</td>
                 <td style="font-size: 14px">{{$row->Uuid}}</td>
                 <td style="font-size: 14px">{{$addr[$row->Uuid]['private'] }}</td>
-                <td style="font-size: 14px">{{$addr[$row->Uuid]['public']}}</td>
+		<td style="font-size: 14px">{{$addr[$row->Uuid]['public']}}</td>
+		<td style="font-size: 14px">{{$addr[$row->Uuid]['vcenter']}}</td>
                 <td style="font-size: 14px">{{$addr[$row->Uuid]['workflow']}}</td>
                 <td style="font-size: 14px">
                 @foreach ($row->Profiles as $profile)

@@ -96,10 +96,15 @@ class ILOController extends Controller
                 if ($err) {
                         echo "cURL Error #:" . $err;
 		} else {
+			echo $response;
+			//exit;
 			$val = json_decode($response);
-			$ilo_user_id = $val->Id;
-			$ipmiparam = array($ipmiaddr,$ilo_user_id);
-			$BMAASDBController->AddIPMIUsers($ipmiparam);
+			$ilo_user_id = "";
+			if (property_exists($val, "Id")) {
+    				$ilo_user_id = $val->Id;
+			}
+			#$ipmiparam = array($ipmiaddr,$ilo_user_id);
+			#$BMAASDBController->AddIPMIUsers($ipmiparam);
 			$postparam = array($username,$password,$hostname);
 			Mail::to($user->email)->send(new ILOMailController($postparam));
                         //$ContactController->ProvisioningILOPost($postparam);

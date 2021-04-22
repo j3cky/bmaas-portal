@@ -52,14 +52,14 @@ Route::get('/irctest', 'RackNController@TestIRC')->middleware('auth');
 //Route::get('/irctest', function () {
 //    return view('testirc');
 //});
-
+Route::get('/testvpn/', 'RackNController@CreateRackNMachine');
 Route::get('/testcluster/', 'RackNController@TestClusterProfile')->middleware('auth');
 Route::get('/testvc/', 'RackNController@DeleteVC')->middleware('auth');
 Route::get('/listmachines/', 'RackNController@GetListMachines')->middleware('auth');
 Route::get('/listmachineskub/', 'RackNController@ListKubMachines')->middleware('auth');
 Route::get('/listmachineswin/', 'RackNController@ListWinMachines')->middleware('auth');
 Route::get('/listmachineslin/', 'RackNController@ListLinMachines')->middleware('auth');
-Route::post('/orderpage/ordergioprivate/process', 'RackNController@ProcessGioPrivateOrder')->middleware('auth');
+Route::post('/orderpage/ordergioprivate/process', 'RackNController@ProcessGioPrivateJob')->middleware('auth');
 Route::post('/listmachines/action/redeploy', 'RackNController@RedeployMachine')->middleware('auth');
 Route::post('/listmachines/action/unsubbare', 'RackNController@UnsubscribeBareMetal')->middleware('auth');
 Route::post('/listmachines/action/unsubpriv', 'RackNController@UnsubGioPrivate')->middleware('auth');
@@ -105,4 +105,7 @@ Route::resource('activity', 'ActivityController');
 
 
 Route::get('/home', 'HomeController@index')->name('home');
+
+// Route::get('/activity', 'RackNController@GetActivityJobs')->name('jobstat');
+
 Route::get('/', 'RackNController@GetListMachines')->middleware('auth');
