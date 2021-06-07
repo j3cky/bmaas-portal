@@ -307,7 +307,7 @@ class RackNController extends Controller
 			$this->PowerVM($vmid, "stop", $token);
 			$this->DeleteMasterVM($vmid, $token);
 			$pubipid = $BMAASDBController->GetMachinePubIPId($uuid);
-			$BMAASDBController->UpdateStatusPubIP("Active",$pubipid->netbox_addr_id);
+			$NetBoxController->UpdateStatusPubIP("active", "null", $pubipid->netbox_addr_id);
 			$this->DeleteVMfromDRP($uuid);
 			$BMAASDBController->RemoveBMAASPublicMachineAddr($uuid);
 			$BMAASDBController->RemoveBMAASMachineAddr($uuid);
@@ -342,7 +342,7 @@ class RackNController extends Controller
 			$this->PatchUEFIBoot($ipmiaddr, $uuid);
 			$this->ResetServer($ipmiaddr);
 			$pubipid = $BMAASDBController->GetMachinePubIPId($uuid);
-			$BMAASDBController->UpdateStatusPubIP("Active",$pubipid->netbox_addr_id);
+			$NetBoxController->UpdateStatusPubIP("active", "null", $pubipid->netbox_addr_id);
 			$BMAASDBController->RemoveBMAASPublicMachineAddr($uuid);
 			$BMAASDBController->RemoveBMAASMachineAddr($uuid);
 			$BMAASDBController->RemoveBMAASWF($uuid);
@@ -353,13 +353,13 @@ class RackNController extends Controller
 		//$querynet = $BMAASDBController->GetTenantPublicNetworkInfo($tenant,"baremetal");
 		$querynet = $BMAASDBController->GetClusterPublicNetworkInfo($profile);
 		//array_key_exists('netbox_prefix_id', $querynet);
-		$BMAASDBController->UpdateStatusPrefix("Active", $querynet->netbox_prefix_id);
+		$NetBoxController->UpdateStatusPrefix("active", "null", $querynet->netbox_prefix_id);
 		$tenantquery = $BMAASDBController->GetTenantID($tenant);
 
 		//$BMAASDBController->RemoveBMAASNetwork($tenantquery->tenant_id);
 		$lbranges = $BMAASDBController->GetProfileLBRange($profile);
 		foreach ($lbranges as $lbrange) {
-			$BMAASDBController->UpdateStatusPubIP("Active",$lbrange->netbox_addr_id);
+			$NetBoxController->UpdateStatusPubIP("active", "null", $lbrange->netbox_addr_id);
 		}
 		$BMAASDBController->RemoveBMAASPubNetworkLBRange($profile);
 		$BMAASDBController->RemoveBMAASPubNetwork($querynet->id);
@@ -462,8 +462,7 @@ class RackNController extends Controller
 				$BMAASDBController->RemoveBMAASWF($uuid);
 				//$this->ResetVMUefiBoot($param->vmname);
 				if (!empty($machinesinfo->public_ip)) {
-					//	$NetBoxController->UpdateStatusPubIP("active", "null", $pubip_id);
-					$BMAASDBController->UpdateStatusPubIPFromIP("Active",$machinesinfo->public_ip);
+					$NetBoxController->UpdateStatusPubIP("active", "null", $pubip_id);
 				}
 				$BMAASDBController->RemoveBMAASMachineAddr($uuid);
 				$ipmival = $BMAASDBController->GetIPMIUsers($ipmiaddr);
@@ -495,8 +494,7 @@ class RackNController extends Controller
 				$BCFController->DeleteInterfaceGroup($tenant . "-baremetal", $ifgroup->ifgroup_uplink, $user);
 				//$this->ResetVMUefiBoot($param->vmname);
 				if (!empty($machinesinfo->public_ip)) {
-					//$NetBoxController->UpdateStatusPubIP("active", "null", $pubip_id);
-					$BMAASDBController->UpdateStatusPubIPFromIP("Active",$machinesinfo->public_ip);
+					$NetBoxController->UpdateStatusPubIP("active", "null", $pubip_id);
 				}
 				$BMAASDBController->RemoveBMAASMachineAddr($uuid);
 				$ipmival = $BMAASDBController->GetIPMIUsers($ipmiaddr);
@@ -1018,7 +1016,6 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			'pubipcheckbare' => $request->pubipcheckbare,
 			'raidbare' => $request->raidbare
 		);
-		
 		$BMAASDBController = new BMAASDBController;
 		//$BMAASDBController->BMAASQueue($objectvalue);
 		dispatch(new DeployBareMetal($objectvalue, $user));
@@ -1132,14 +1129,13 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$networkexist = $BMAASDBController->CheckTenantNetwork($tenant, "baremetal");
 			if ($networkexist == null) {
 				$tenantdb = $BMAASDBController->GetTenantID($tenant);
-				//$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
-				$prefixarr = $BMAASDBController->GetAvailablePrefix("Private");
+				$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
 				$tenantdb->tenant_id;
 				$networkinfo[0] = $tenantdb->tenant_id;
-				$networkinfo[1] = $prefixarr->id;
+				$networkinfo[1] = $prefixarr['id'];
 				$networkinfo[2] = "baremetal";
 				$networkid = $BMAASDBController->AddBMAASTenantNetwork($networkinfo);
-				$prefix = explode("/", $prefixarr->prefix_net);
+				$prefix = explode("/", $prefixarr['prefix']);
 				$sub = new SubnetCalculatorController($prefix[0], $prefix[1]);
 				$privategw = $sub->getMaxHost();
 				$privateip = $sub->getMinHost();
@@ -1154,21 +1150,21 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 					$segment = $BCFController->CreateSegment($tenant . "-baremetal", $user);
 				}
 				if ($segment == 204 or $segment == 100) {
-					$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr->vlan, "CVC001", $user);
+					$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr['vlan'], "CVC001", $user);
 					//$BCFController->AddInterfaceGroup($prefixarr['vlan']);
 					$segmentint = $BCFController->CreateSegmentInterface($tenant . "-baremetal", $user);
 				}
 				if ($segmentint == 204 or $segmentint == 100) {
 					$segmentintip = $BCFController->CreateSegmentInterfaceIP($privategw, $tenant . "-baremetal", $user);
-					$BCFController->ConfigureStaticRoute($prefixarr->prefix_net, $user);
+					$BCFController->ConfigureStaticRoute($prefixarr['prefix'], $user);
 				}
 			} else {
 				$networkinfo = $BMAASDBController->GetTenantNetworkInfo($tenant, "baremetal");
 				$networkid = $networkinfo->id;
-				$prefixarr = $BMAASDBController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
+				$prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
 				$lastip = $BMAASDBController->GetLastPrivateIP($networkinfo->netbox_prefix_id);
 				if ($lastip->ip_address == null) {
-					$prefix = explode("/", $prefixarr->prefix_net);
+					$prefix = explode("/", $prefixarr['prefix']);
 					$ipcount = ip2long($prefix[0]) + 1;
 					$privateip = long2ip($ipcount);
 				} else {
@@ -1184,50 +1180,30 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 					//$params[0] = $tenantget->tenant_id;
 					//$params[1] = $clustername;				
 					//$BMAASDBController->AddBMAASKubCluster($params);
-					$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr->vlan, "CVC001", $user);
+					$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr['vlan'], "CVC001", $user);
 				}
 			}
 			// Public Prefix
 			$tenantdb = $BMAASDBController->GetTenantID($tenant);
-			$pubprefixarr = $BMAASDBController->GetAvailablePrefix("Public");
-			$pubaddrexplode = explode("/", $pubprefixarr->prefix_net);
+			$pubprefixarr = $NetBoxController->GetAvailablePrefix("Public");
+			$pubaddrexplode = explode("/", $pubprefixarr['prefix']);
 			$pubaddr = $pubaddrexplode[0];
 			$pubsubnet = $pubaddrexplode[1];
 			$sub = new SubnetCalculatorController($pubaddr, $pubsubnet);
 			$pubgw = $sub->getMaxHost();
-			/*$metallbrange = $BMAASDBController->GetAvailablePubIPfromPrefix($pubprefixarr->id, 2);
-			$i=0;
-			foreach ($metallbrange as $key => $row) {
-				$metallbrangearr[$i] = explode("/", $row->address);
-    				
-			}*/
-
-			//$metallbrange1 = explode("/", $metallbrange[0]['address']);
-			//$metallbrange2 = explode("/", $metallbrange[1]['address']);
-			//$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $metallbrange[0]['id']);
-			//$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $metallbrange[1]['id']);
+			$metallbrange = $NetBoxController->GetAvailablePubIPfromPrefix($pubprefixarr['prefix'], 2);
+			$metallbrange1 = explode("/", $metallbrange[0]['address']);
+			$metallbrange2 = explode("/", $metallbrange[1]['address']);
+			$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $metallbrange[0]['id']);
+			$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $metallbrange[1]['id']);
 			$tenantdb->tenant_id;
 			$pubnetworkinfo[0] = $tenantdb->tenant_id;
-			$pubnetworkinfo[1] = $pubprefixarr->id;
+			$pubnetworkinfo[1] = $pubprefixarr['id'];
 			$pubnetworkinfo[2] = "baremetal";
-			$pubprefix = explode("/", $pubprefixarr->prefix_net);
+			$pubprefix = explode("/", $pubprefixarr['prefix']);
 			$subnet = $pubprefix[1];
 			$pubnetworkid = $BMAASDBController->AddBMAASTenantPublicNetwork($pubnetworkinfo);
-                        $metallbrange = $BMAASDBController->GetAvailablePubIPfromPrefix($pubprefixarr->id, 2);
-                        $i=0;
-                        foreach ($metallbrange as $key => $row) {
-				$metallbrangearr[$i] = explode("/", $row->address);
-				$BMAASDBController->UpdateStatusPubIP('Reserved',$row->id);
-	                        $addpubnetworkinfo[0] = $pubnetworkid;
-        	                $addpubnetworkinfo[1] = $row->id;
-                	        $addpubnetworkinfo[2] = $clustername;
-                        	$addpubnetworkinfo[3] = $row->address;
-				$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
-				$i++;
-
-                        }
-			
-			/*$addpubnetworkinfo[0] = $pubnetworkid;
+			$addpubnetworkinfo[0] = $pubnetworkid;
 			$addpubnetworkinfo[1] = $metallbrange[0]['id'];
 			$addpubnetworkinfo[2] = $clustername;
 			$addpubnetworkinfo[3] = $metallbrange[0]['address'];
@@ -1237,10 +1213,9 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$addpubnetworkinfo[2] = $clustername;
 			$addpubnetworkinfo[3] = $metallbrange[1]['address'];
 			$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
-			 */
-			$segment = $BCFController->CreateSegment($tenant . '-' . $pubprefixarr->vlan, $user);
+			$segment = $BCFController->CreateSegment($tenant . '-' . $pubprefixarr['vlan'], $user);
 			if ($segment == 204 or $segment == 100) {
-				$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr->vlan, $pubprefixarr->vlan, "CVC001", $user);
+				$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr['vlan'], $pubprefixarr['vlan'], "CVC001", $user);
 			}
 			// End Public Prefix
 			if ($selectkubha == "kubnoha") {
@@ -1272,17 +1247,13 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 						"krib/cluster-master-vip": "' . $mastervip . '",
 						"krib/package-repository": "http://103.93.128.194:8091/package/",
 	                                        "krib/metallb-version": "v0.9.4",
-	                                        "metallb/l2-ip-range": "' . $metallbrangearr[0][0] . '-' . $metallbrangearr[1][0] . '"				
+	                                        "metallb/l2-ip-range": "' . $metallbrange1[0] . '-' . $metallbrange2[0] . '"				
 	                                },
 					"Profiles": []
 				}';
 				$this->CreateProfile($jsonparam);
 				for ($i = 0; $i < $workernum; $i++) {
-					$pubips = $BMAASDBController->GetAvailablePubIPfromPrefix($pubprefixarr->id, 1);
-					foreach ($pubips as $key => $row) {
-						$pubip[0]['id']=$row->id;
-						$pubip[0]['address']=$row->address;	
-					}
+					$pubip = $NetBoxController->GetAvailablePubIPfromPrefix($pubprefixarr['prefix'], 1);
 					$parampatch = '[
                                         { "op": "add", "path": "/tenant", "value": "' . $tenant . '" },
                                         { "op": "add", "path": "/access-keys", "value": {"user":"' . $sshkey . '"} },
@@ -1301,8 +1272,8 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                         "eno7": {}
                                                                 },
                                                                 "vlans": {
-                                                                        "bond0.' . $prefixarr->vlan . '": {},
-                                                                        "bond0.' . $pubprefixarr->vlan . '": {}
+                                                                        "bond0.' . $prefixarr['vlan'] . '": {},
+                                                                        "bond0.' . $pubprefixarr['vlan'] . '": {}
                                                                 },
                                                                 "version": 2
                                                         }
@@ -1323,11 +1294,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                         
                                                                 }
                                                         },
-                                                        "bond0.' . $prefixarr->vlan . '": {
+                                                        "bond0.' . $prefixarr['vlan'] . '": {
                                                                         "addresses": [
                                                                         "' . long2ip($ipcount) . '/24"
                                                                 ],
-                                                                "id": ' . $prefixarr->vlan . ',
+                                                                "id": ' . $prefixarr['vlan'] . ',
                                                                 "link": "bond0",
                                                                 "nameservers": {
                                                                         "addresses": [
@@ -1342,12 +1313,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                 }
                                                                 ]
 							},
-                                                        "bond0.' . $pubprefixarr->vlan . '": {
+                                                        "bond0.' . $pubprefixarr['vlan'] . '": {
                                                                 "addresses": [
-                                                                        "' . $pubip[0]['address']. '"
+                                                                        "' . $pubip[0]['address'] . '"
                                                                 ],
                                                                 "gateway4": "' . $pubgw . '",
-                                                                "id": ' . $pubprefixarr->vlan . ',
+                                                                "id": ' . $pubprefixarr['vlan'] . ',
                                                                 "link": "bond0",
                                                                 "nameservers": {
                                                                         "addresses": [
@@ -1384,19 +1355,19 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 						$params[1] = $workflow;
 						$params[2] = $tenantget->tenant_id;
 						$BMAASDBController->AddBMAASWF($params);
-						$BMAASDBController->UpdateStatusPubIP('Reserved', $pubip[0]['id']);
+						$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $pubip[0]['id']);
 						$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
-						$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr->vlan, $pubprefixarr->vlan, $ifgroup->ifgroup_uplink, $user);
-						$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr->vlan, $ifgroup->ifgroup_uplink, $user);
+						$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr['vlan'], $pubprefixarr['vlan'], $ifgroup->ifgroup_uplink, $user);
+						$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr['vlan'], $ifgroup->ifgroup_uplink, $user);
 
 						$ILOController->CreateILOUser($ipmiaddr, $ifgroup->ipmi_console_hostname, $user);
 					}
 					$ipcount++;
 				} // End For Looping
 				if ($networkexist == null) {
-					$BMAASDBController->UpdateStatusPrefix("Reserved",$prefixarr->id);
+					$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $prefixarr['id']);
 				}
-				$BMAASDBController->UpdateStatusPrefix("Reserved", $pubprefixarr->id);
+				$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $pubprefixarr['id']);
 			} // End if Select Kubnoha
 			elseif ($selectkubha == "kubha") {
 				$jsonparam = '{
@@ -1428,12 +1399,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 					"krib/cluster-master-vip": "' . $mastervip . '",
 					"krib/selective-mastership": true,
 					"krib/cluster-masters-untainted": false,
-					"krib/cluster-vlan": ' . $prefixarr->vlan . ',
+					"krib/cluster-vlan": ' . $prefixarr['vlan'] . ',
 					"krib/cluster-cni-version": "v0.8.7",
 					"krib/metallb-version": "v0.9.4",
 					"krib/package-repository": "http://103.93.128.194:8091/package/",
-					"krib/public-vlan": "' . $pubprefixarr->vlan . '",
-					"metallb/l2-ip-range": "' . $metallbrangearr[0][0] . '-' . $metallbrangearr[1][0] . '"
+					"krib/public-vlan": "' . $pubprefixarr['vlan'] . '",
+					"metallb/l2-ip-range": "' . $metallbrange1[0] . '-' . $metallbrange2[0] . '"
                                 },
                                 "Profiles": []
 				}';
@@ -1442,15 +1413,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 				for ($i = 0; $i < 3; $i++) {
 					//$ipcount++;
 					//$pubipcount++;
-					$pubips = $BMAASDBController->GetAvailablePubIPfromPrefix($pubprefixarr->id, 1);
-                                        foreach ($pubips as $key => $row) {
-                                                $pubip[0]['id']=$row->id;
-                                                $pubip[0]['address']=$row->address;
-					}
+					$pubip = $NetBoxController->GetAvailablePubIPfromPrefix($pubprefixarr['prefix'], 1);
 					$pubipvalarr[$i]['id'] = $pubip[0]['id'];
 					$pubipvalarr[$i]['address'] = $pubip[0]['address'];
 					$ipvalarr[$i] = long2ip($ipcount);
-					$BMAASDBController->UpdateStatusPubIP('Reserved',$pubip[0]['id']);
+					$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $pubip[0]['id']);
 					//$pubiparr = $NetBoxController->GetAvailablePubIP();
 					$parampatch[$i] = '[
 	                                { "op": "add", "path": "/tenant", "value": "' . $tenant . '" },
@@ -1470,8 +1437,8 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
 							},
                                                         "vlans": {
-                                                            	"ens256.' . $prefixarr->vlan . '": {},
-                                                         	"ens224.' . $pubprefixarr->vlan . '": {}
+                                                            	"ens256.' . $prefixarr['vlan'] . '": {},
+                                                         	"ens224.' . $pubprefixarr['vlan'] . '": {}
                                                         },
 
                                                         "version": 2
@@ -1485,12 +1452,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                         "dhcp4": "no"
 								
                                                 },
-                                                "ens224.' . $pubprefixarr->vlan . '": {
+                                                "ens224.' . $pubprefixarr['vlan'] . '": {
                                                         "dhcp4": "no",
                                                         "addresses": [
                                                                 "' . $pubip[0]['address'] . '"
 							],
-							"id": ' . $pubprefixarr->vlan . ',
+							"id": ' . $pubprefixarr['vlan'] . ',
 							"link": "ens224",
                                                         "gateway4": "' . $pubgw . '",
                                                         "nameservers": {
@@ -1499,12 +1466,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                 ]
                                                         }
                                                 },
-                                                "ens256.' . $prefixarr->vlan . '": {
+                                                "ens256.' . $prefixarr['vlan'] . '": {
                                                         "dhcp4": "no",
                                                         "addresses": [
                                                                 "' . long2ip($ipcount) . '/24"
 							],
-							"id": ' . $prefixarr->vlan . ',
+							"id": ' . $prefixarr['vlan'] . ',
 							"link": "ens256",
                                                         "routes": [
                                                           {
@@ -1521,10 +1488,10 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 				}
 				$status = $this->CreateDeploymentVM("kubha", $parampatch, $user, $clustername);
 				if ($networkexist == null) {
-					$BMAASDBController->UpdateStatusPrefix("Reserved", $prefixarr->id);
+					$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $prefixarr['id']);
 				}
 				//if ($pubnetworkexist == null){
-				$BMAASDBController->UpdateStatusPrefix("Reserved", $pubprefixarr->id);
+				$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $pubprefixarr['id']);
 				//}
 				for ($i = 0; $i < 3; $i++) {
 					$addnetworkinfo[0] = $networkid;
@@ -1540,15 +1507,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 						$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
 						$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
 					} else {
-						$BMAASDBController->UpdateStatusPubIP('Active', $pubipvalarr[$i]['id']);
+						$NetBoxController->UpdateStatusPubIP('active', $NBtenantid, $pubipvalarr[$i]['id']);
 					}
 				}
 				for ($i = 0; $i < $workernum; $i++) {
-					$pubips = $BMAASDBController->GetAvailablePubIPfromPrefix($pubprefixarr->id, 1);
-                                        foreach ($pubips as $key => $row) {
-                                                $pubip[0]['id']=$row->id;
-                                                $pubip[0]['address']=$row->address;
-                                        }					
+					$pubip = $NetBoxController->GetAvailablePubIPfromPrefix($pubprefixarr['prefix'], 1);
 					$pubipvalarr[$i]['id'] = $pubip[0]['id'];
 					$pubipvalarr[$i]['address'] = $pubip[0]['address'];
 					$parampatch = '[
@@ -1569,8 +1532,8 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                 	"eno7": {}
                                                         	},
                                                         	"vlans": {
-                                                                	"bond0.' . $prefixarr->vlan . '": {},
-                                                                	"bond0.' . $pubprefixarr->vlan . '": {}
+                                                                	"bond0.' . $prefixarr['vlan'] . '": {},
+                                                                	"bond0.' . $pubprefixarr['vlan'] . '": {}
                                                         	},
                                                         	"version": 2
                                                 	}
@@ -1591,11 +1554,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                 	
                                                         	}
                                                 	},
-                                                	"bond0.' . $prefixarr->vlan . '": {
+                                                	"bond0.' . $prefixarr['vlan'] . '": {
                                                         		"addresses": [
                                                                 	"' . long2ip($ipcount) . '/24"
                                                         	],
-                                                        	"id": ' . $prefixarr->vlan . ',
+                                                        	"id": ' . $prefixarr['vlan'] . ',
                                                         	"link": "bond0",
                                                         	"nameservers": {
                                                                 	"addresses": [
@@ -1610,12 +1573,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                           	}
                                                         	]
 							},
-                                                	"bond0.' . $pubprefixarr->vlan . '": {
+                                                	"bond0.' . $pubprefixarr['vlan'] . '": {
                                                         	"addresses": [
                                                                 	"' . $pubip[0]['address'] . '"
                                                         	],
                                                         	"gateway4": "' . $pubgw . '",
-                                                        	"id": ' . $pubprefixarr->vlan . ',
+                                                        	"id": ' . $pubprefixarr['vlan'] . ',
                                                        		"link": "bond0",
                                                         	"nameservers": {
                                                                 	"addresses": [
@@ -1655,10 +1618,10 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
 						$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
 						$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
-						$BMAASDBController->UpdateStatusPubIP('Reserved',  $pubip[0]['id']);
+						$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $pubip[0]['id']);
 						$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
-						$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr->vlan, $pubprefixarr->vlan, $ifgroup->ifgroup_uplink, $user);
-						$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr->vlan, $ifgroup->ifgroup_uplink, $user);
+						$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr['vlan'], $pubprefixarr['vlan'], $ifgroup->ifgroup_uplink, $user);
+						$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr['vlan'], $ifgroup->ifgroup_uplink, $user);
 						$ILOController->CreateILOUser($ipmiaddr, $ifgroup->ipmi_console_hostname, $user);
 					}
 					$ipcount++;
@@ -1680,9 +1643,9 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
 			$networkinfo = $BMAASDBController->GetTenantNetworkInfo($tenant, "baremetal");
 			$networkid = $networkinfo->id;
-			$prefixarr = $BMAASDBController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
-			$pubprefixarr = $BMAASDBController->GetPrivatePrefixDetail($clusternetinfo->netbox_prefix_id);
-			$pubaddrexplode = explode("/", $pubprefixarr->prefix_net);
+			$prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
+			$pubprefixarr = $NetBoxController->GetPrivatePrefixDetail($clusternetinfo->netbox_prefix_id);
+			$pubaddrexplode = explode("/", $pubprefixarr['prefix']);
 			$pubaddr = $pubaddrexplode[0];
 			$pubsubnet = $pubaddrexplode[1];
 			$sub = new SubnetCalculatorController($pubaddr, $pubsubnet);
@@ -1690,7 +1653,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
 			$lastip = $BMAASDBController->GetLastPrivateIP($networkinfo->netbox_prefix_id);
 			if ($lastip->ip_address == null) {
-				$prefix = explode("/", $prefixarr->prefix_net);
+				$prefix = explode("/", $prefixarr['prefix']);
 				$ipcount = ip2long($prefix[0]) + 1;
 				$privateip = long2ip($ipcount);
 			} else {
@@ -1701,12 +1664,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$strcount = strlen($ipexplode[3]);
 			$privategw = substr_replace($privateip, "254", -$strcount);
 			for ($i = 0; $i < $workernum; $i++) {
-				$pubip = $BMAASDBController->GetAvailablePubIPfromPrefix($pubprefixarr->id, 1);
-                                foreach ($pubips as $key => $row) {
-                                	$pubip[0]['id']=$row->id;
-                                       	$pubip[0]['address']=$row->address;
-                                }
-				
+				$pubip = $NetBoxController->GetAvailablePubIPfromPrefix($pubprefixarr['prefix'], 1);
 				$pubipvalarr[$i]['id'] = $pubip[0]['id'];
 				$pubipvalarr[$i]['address'] = $pubip[0]['address'];
 				$parampatch = '[
@@ -1727,8 +1685,8 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                 	"eno7": {}
                                                         	},
                                                         	"vlans": {
-                                                                	"bond0.' . $prefixarr->vlan . '": {},
-                                                                	"bond0.' . $pubprefixarr->vlan . '": {}
+                                                                	"bond0.' . $prefixarr['vlan'] . '": {},
+                                                                	"bond0.' . $pubprefixarr['vlan'] . '": {}
                                                         	},
                                                         	"version": 2
                                                 	}
@@ -1749,11 +1707,11 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                                 	
                                                         	}
                                                 	},
-                                                	"bond0.' . $prefixarr->vlan . '": {
+                                                	"bond0.' . $prefixarr['vlan'] . '": {
                                                         		"addresses": [
                                                                 	"' . long2ip($ipcount) . '/24"
                                                         	],
-                                                        	"id": ' . $prefixarr->vlan . ',
+                                                        	"id": ' . $prefixarr['vlan'] . ',
                                                         	"link": "bond0",
                                                         	"nameservers": {
                                                                 	"addresses": [
@@ -1768,12 +1726,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                                           	}
                                                         	]
 							},
-                                                	"bond0.' . $pubprefixarr->vlan . '": {
+                                                	"bond0.' . $pubprefixarr['vlan'] . '": {
                                                         	"addresses": [
                                                                 	"' . $pubip[0]['address'] . '"
                                                         	],
                                                         	"gateway4": "' . $pubgw . '",
-                                                        	"id": ' . $pubprefixarr->vlan . ',
+                                                        	"id": ' . $pubprefixarr['vlan'] . ',
                                                        		"link": "bond0",
                                                         	"nameservers": {
                                                                 	"addresses": [
@@ -1813,10 +1771,10 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
 					$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);
 					$BMAASDBController->AddBMAASMachinePublicAddr($addpubnetworkinfo);
-					$BMAASDBController->UpdateStatusPubIP('Reserved', $pubip[0]['id']);
+					$NetBoxController->UpdateStatusPubIP('reserved', $NBtenantid, $pubip[0]['id']);
 					$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
-					$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr->vlan, $pubprefixarr->vlan, $ifgroup->ifgroup_uplink, $user);
-					$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr->vlan, $ifgroup->ifgroup_uplink, $user);
+					$BCFController->AddInterfaceGroup($tenant . '-' . $pubprefixarr['vlan'], $pubprefixarr['vlan'], $ifgroup->ifgroup_uplink, $user);
+					$BCFController->AddInterfaceGroup($tenant . "-baremetal", $prefixarr['vlan'], $ifgroup->ifgroup_uplink, $user);
 				}
 				$ipcount++;
 			}
@@ -2587,7 +2545,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 
 		}
 	}
-	public function ProcessBareMetalOrder($request,$user)
+	public function ProcessBareMetalOrder($request, $user)
 	{
 		//$user = Auth::User();
 		/*$validatedData = $request->validate([
@@ -2603,24 +2561,22 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$tenantget = $BMAASDBController->GetTenantbyUser($user->id);
 
 		$tenant =  $tenantget->tenant_name;
-		//$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
+		$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
 		//$tenant = request()->segment(1);
-		/*
-		$workflow = $request->input('selectos');
+		/*$workflow = $request->input('selectos');
 		$hostname = $request->input('hostname');
 		$sshkey = $request->input('sshkeybare');
 		$serverspek = $request->input('serverspek');
 		$pubipcheck = $request->input('pubipcheckbare');
 		$raid = $request->input('raidbare');
-		 */ 
-
+		 */
 		$workflow = $request->selectos;
 		//$hostname = $request->hostname;
 		$sshkey = $request->sshkeybare;
 		$serverspek = $request->serverspek;
 		$pubipcheck = $request->pubipcheckbare;
 		$raid = $request->raidbare;
-		
+
 		$pubiparr['address'] = "";
 		$uuid = $this->GetAvailableMachine($serverspek);
 		if (empty($uuid)) {
@@ -2640,18 +2596,15 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$networkexist = $BMAASDBController->CheckTenantNetwork($tenant, "baremetal");
 		if ($networkexist == null) {
 			$tenantdb = $BMAASDBController->GetTenantID($tenant);
-			//$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
-			//$NetBoxController->UpdateStatusPrefix("Reserved",$prefixarr->id);
-                        $prefixarr = $BMAASDBController->GetAvailablePrefix("Private");
-                        $BMAASDBController->UpdateStatusPrefix("Reserved",$prefixarr->id);
-	
+			$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
+			$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $prefixarr['id']);
 			$tenantdb->tenant_id;
 			$networkinfo[0] = $tenantdb->tenant_id;
-			$networkinfo[1] = $prefixarr->id;
+			$networkinfo[1] = $prefixarr['id'];
 			$networkinfo[2] = "baremetal";
 			$networkid = $BMAASDBController->AddBMAASTenantNetwork($networkinfo);
 			//$lastip = $BMAASDBController->GetLastPrivateIP($networkinfo[1]);
-			$prefix = explode("/", $prefixarr->prefix_net);
+			$prefix = explode("/", $prefixarr['prefix']);
 			$sub = new SubnetCalculatorController($prefix[0], $prefix[1]);
 			$privategw = $sub->getMaxHost();
 			$privateip = $sub->getMinHost();
@@ -2677,16 +2630,15 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			}
 			if ($segmentint == 204 or $segmentint == 100) {
 				$segmentintip = $BCFController->CreateSegmentInterfaceIP($privategw, $tenant . "-baremetal", $user);
-				$BCFController->ConfigureStaticRoute($prefixarr->prefix_net, $user);
+				$BCFController->ConfigureStaticRoute($prefixarr['prefix'], $user);
 			}
 		} else {
 			$networkinfo = $BMAASDBController->GetTenantNetworkInfo($tenant, "baremetal");
 			$networkid = $networkinfo->id;
-			//$prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
-			$prefixarr = $BMAASDBController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
+			$prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
 			$lastip = $BMAASDBController->GetLastPrivateIP($networkinfo->netbox_prefix_id);
 			if ($lastip->ip_address == null) {
-				$prefix  = explode("/", $prefixarr->prefix_net);
+				$prefix = explode("/", $prefixarr['prefix']);
 				$longprivateip = ip2long($prefix[0]) + 1;
 				$privateip = long2ip($longprivateip);
 			} else {
@@ -2711,17 +2663,16 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		//$privateip=$prefix[0];
 		$subnet = "24";
 		$ip = $privateip . "/24";
-		$vlan = $prefixarr->vlan;
+		$vlan = $prefixarr['vlan'];
 		//$uuid = $this->GetAvailableMachine($serverspek);
 		//$parampatch = '[{ "op": "add", "path": "/tenant", "value": "'.$tenant.'" }]';
 		//$this->PatchMachinesParam($uuid,$parampatch);
 		if (isset($pubipcheck)) {
-			//$pubiparr = $NetBoxController->GetAvailablePubIP();
+			$pubiparr = $NetBoxController->GetAvailablePubIP();
 			//$NetBoxController->UpdateStatusPubIP("reserved",$NBtenantid,$pubiparr['id']);
 			//$pubipexplode = explode("/", $pubip['gateway']);
 			//$pubgw = $pubipexplode[0];
-			//$prefixval = $NetBoxController->GetPrefixFromIPAdd($pubiparr['address']);
-			$prefixval = $BMAASDBController->GetAvailablePubIP();
+			$prefixval = $NetBoxController->GetPrefixFromIPAdd($pubiparr['address']);
 			$parampatch = '[
                                 { "op": "add", "path": "/access-keys", "value": {"user":"' . $sshkey . '"} },
                                 { "op": "add",
@@ -2780,7 +2731,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 						},
                                                 "bond0.' . $prefixval['vlan'] . '": {
                                                         "addresses": [
-                                                                "' . $prefixval['address'] . '"
+                                                                "' . $pubiparr['address'] . '"
                                                         ],
                                                         "gateway4": "' . $prefixval['gateway'] . '",
                                                         "id": ' . $prefixval['vlan'] . ',
@@ -2797,7 +2748,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                         }
                                 }
 			]';
-			$pubprefix = explode("/", $prefixval['address']);
+			$pubprefix = explode("/", $pubiparr['address']);
 			if ($workflow == 'debian10-base' || $workflow == 'debian9-base') {
 				$parampatch = '[
                                         { "op": "add", "path": "/operating-system-disk", "value": "sdb" },
@@ -2811,7 +2762,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                         },
                                         { "op": "add", "path": "/debian-pubnetwork", "value": [
                                                   {
-                                                        "Address": "' . $prefixval['address'] . '",
+                                                        "Address": "' . $pubiparr['address'] . '",
                                                         "gateway": "' . $prefixval['gateway'] . '",
                                                         "vlan": ' . $prefixval['vlan'] . '
                                                   }
@@ -3045,13 +2996,13 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$addnetworkinfo[0] = $networkid;
 		$addnetworkinfo[1] = $privateip;
 		$addnetworkinfo[2] = $uuid;
-		$addnetworkinfo[3] = $prefixval['address'];
+		$addnetworkinfo[3] = $pubiparr['address'];
 		if ($statuswf == 200) {
 			if ($networkexist == null) {
-				$BMAASDBController->UpdateStatusPrefix("Reserved", $prefixarr->id);
+				$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $prefixarr['id']);
 			}
 			if (isset($pubipcheck)) {
-				$BMAASDBController->UpdateStatusPubIP("Reserved",$prefixval['id']);
+				$NetBoxController->UpdateStatusPubIP("reserved", $NBtenantid, $pubiparr['id']);
 			}
 			$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
 			$BCFController->AddInterfaceGroup($tenant . "-baremetal", $vlan, $ifgroup->ifgroup_uplink, $user);
@@ -3125,17 +3076,13 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$networkexist = $BMAASDBController->CheckTenantNetwork($tenant, "baremetal");
 		if ($networkexist == null) {
 			$tenantdb = $BMAASDBController->GetTenantID($tenant);
-			//$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
-
-                        $prefixarr = $BMAASDBController->GetAvailablePrefix("Private");
-			$BMAASDBController->UpdateStatusPrefix("Reserved",$prefixarr->id);
-
+			$prefixarr = $NetBoxController->GetAvailablePrefix("Private");
 			$tenantdb->tenant_id;
 			$networkinfo[0] = $tenantdb->tenant_id;
-			$networkinfo[1] = $prefixarr->id;
+			$networkinfo[1] = $prefixarr['id'];
 			$networkinfo[2] = "baremetal";
 			$networkid = $BMAASDBController->AddBMAASTenantNetwork($networkinfo);
-			$prefix = explode("/", $prefixarr->prefix_net);
+			$prefix = explode("/", $prefixarr['prefix']);
 			$sub = new SubnetCalculatorController($prefix[0], $prefix[1]);
 			$privategw = $sub->getMaxHost();
 			$privateip = $sub->getMinHost();
@@ -3162,16 +3109,15 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			}
 			if ($segmentint == 204 or $segmentint == 100) {
 				$segmentintip = $BCFController->CreateSegmentInterfaceIP($privategw, $tenant . "-baremetal", $user);
-				$BCFController->ConfigureStaticRoute($prefixarr->prefix_net, $user);
+				$BCFController->ConfigureStaticRoute($prefixarr['prefix'], $user);
 			}
 		} else {
 			$networkinfo = $BMAASDBController->GetTenantNetworkInfo($tenant, "baremetal");
 			$networkid = $networkinfo->id;
-			//$prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
-			$prefixarr = $BMAASDBController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
+			$prefixarr = $NetBoxController->GetPrivatePrefixDetail($networkinfo->netbox_prefix_id);
 			$lastip = $BMAASDBController->GetLastPrivateIP($networkinfo->netbox_prefix_id);
 			if ($lastip->ip_address == null) {
-				$prefix = explode("/", $prefixarr->prefix_net);
+				$prefix = explode("/", $prefixarr['prefix']);
 				$longprivateip = ip2long($prefix[0]) + 1;
 				$privateip = long2ip($longprivateip);
 			} else {
@@ -3182,12 +3128,12 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 			$strcount = strlen($ipexplode[3]);
 			$privategw = substr_replace($privateip, "254", -$strcount);
 		}
-		//$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
+		$NBtenantid = $NetBoxController->GetNBTenantid($tenant);
 		//$prefix = explode("/", $prefixarr['prefix']);
 		//$privateip=$prefix[0];
 		//$subnet="24";
 		//$ip=$privateip."/24";
-		$vlan = $prefixarr->vlan;
+		$vlan = $prefixarr['vlan'];
 
 		$jsonparam = '{
                                 "Validated": true,
@@ -3222,10 +3168,9 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$this->PatchMachinesProfiles($uuid, $profilepatch);
 		if (isset($pubipcheck)) {
 
-			//$pubiparr = $NetBoxController->GetAvailablePubIP();
-			//$prefixval = $NetBoxController->GetPrefixFromIPAdd($pubiparr['address']);
-			$prefixval = $BMAASDBController->GetAvailablePubIP();
-			$ipexplode = explode("/", $prefixval['address']);
+			$pubiparr = $NetBoxController->GetAvailablePubIP();
+			$prefixval = $NetBoxController->GetPrefixFromIPAdd($pubiparr['address']);
+			$ipexplode = explode("/", $pubiparr['address']);
 			$parampatch = '[
                                 { "op": "add", "path": "/tenant", "value": "' . $tenant . '" },
 				{ "op": "add", "path": "/image-deploy~1admin-password", "value": "' . $adminpass . '" },
@@ -3244,7 +3189,7 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
                                 }
                                ]';
 		} else {
-			//$pubiparr['address'] = "";
+			$pubiparr['address'] = "";
 			$parampatch = '[
 				{ "op": "add", "path": "/tenant", "value": "' . $tenant . '" },
 				{ "op": "add", "path": "/image-deploy~1admin-password", "value": "' . $adminpass . '" },
@@ -3344,15 +3289,14 @@ Restart-VM -VM $strVMName -RunAsync -Confirm:$false
 		$addnetworkinfo[0] = $networkid;
 		$addnetworkinfo[1] = $privateip;
 		$addnetworkinfo[2] = $uuid;
-		$addnetworkinfo[3] = $prefixval['address'];
+		$addnetworkinfo[3] = $pubiparr['address'];
 		if ($statuswf == 200) {
-                        if ($networkexist == null) {
-                                $BMAASDBController->UpdateStatusPrefix("Reserved", $prefixarr->id);
-                        }
-                        if (isset($pubipcheck)) {
-                                $BMAASDBController->UpdateStatusPubIP("Reserved",$prefixval['id']);
-                        }
-			
+			if ($networkexist == null) {
+				$NetBoxController->UpdateStatusPrefix("reserved", $NBtenantid, $prefixarr['id']);
+			}
+			if (isset($pubipcheck)) {
+				$NetBoxController->UpdateStatusPubIP("reserved", $NBtenantid, $pubiparr['id']);
+			}
 			$ifgroup = $BMAASDBController->GetMachineIfGroup($uuid);
 			$BCFController->AddInterfaceGroup($tenant . "-baremetal", $vlan, $ifgroup->ifgroup_uplink, $user);
 			$BMAASDBController->AddBMAASMachineAddr($addnetworkinfo);

@@ -23,7 +23,9 @@ class UnsubKubernetesCluster implements ShouldQueue
      */
     public function __construct(object $request,$user)
     {
-        //
+            $this->request = $request;
+            $this->user = $user;
+        
     }
 
     /**
@@ -34,7 +36,7 @@ class UnsubKubernetesCluster implements ShouldQueue
     public function handle()
     {
             $RackNController = new RackNController();
-            $RackNController->ProcessKubernetesOrder($this->request,$this->user);	  
+            $RackNController->UnsubscribeKubCluster($this->request,$this->user);	  
         //
     }
 }

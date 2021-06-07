@@ -103,8 +103,8 @@ class ILOController extends Controller
 			if (property_exists($val, "Id")) {
     				$ilo_user_id = $val->Id;
 			}
-			#$ipmiparam = array($ipmiaddr,$ilo_user_id);
-			#$BMAASDBController->AddIPMIUsers($ipmiparam);
+			$ipmiparam = array($ipmiaddr,$ilo_user_id);
+			$BMAASDBController->AddIPMIUsers($ipmiparam);
 			$postparam = array($username,$password,$hostname);
 			Mail::to($user->email)->send(new ILOMailController($postparam));
                         //$ContactController->ProvisioningILOPost($postparam);

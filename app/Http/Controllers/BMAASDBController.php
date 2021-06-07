@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\BCFController;
 use App\Http\Controllers\NetBoxController;
+use App\Http\Controllers\SubnetCalculatorController;
 
 //use App\Http\Controllers\SubnetCalculatorController;
 
@@ -393,10 +394,10 @@ class BMAASDBController extends Controller
         }
 	
 
-        Public function RemoveIPMIUsers($id){
+        Public function RemoveIPMIUsers($ipmi_ip){
                 $current_date = date('Y-m-d H:i:s');
                 DB::table('ipmi_users')
-                        ->where('id', $id)
+                        ->where('ipmi_ip', $ipmi_ip)
                         ->where('destroyed', NULL)
                         ->update(['destroyed' => $current_date]);
 
@@ -460,5 +461,70 @@ class BMAASDBController extends Controller
                         ->where('tenant_id',$tenant_id)
                         ->where('destroyed', NULL)
                         ->get();
-        }
+	}
+	public function GetAvailablePrefix($type){
+                return DB::table('prefix')
+                        ->where('type',$type)
+                        ->where('status', 'Active')
+                        ->first();
+
+	}
+	public function UpdateStatusPrefix($status,$prefixarr_id){
+		DB::table('prefix')
+                        ->where('id', $prefixarr_id)
+                        ->update(['status' => $status]);
+		
+	}
+	public function GetPrivatePrefixDetail($prefixid){
+                return DB::table('prefix')
+                        ->where('id',$prefixid)
+                        ->first();
+
+	}
+	public function GetAvailablePubIP(){
+                $result =  DB::table('prefix')
+                        ->select('prefix_ip.id','prefix_ip.address','prefix.vlan','prefix.prefix_net')
+                        ->join('prefix_ip', 'prefix.id', '=', 'prefix_ip.prefix_id')
+			->where('prefix.tag','Baremetal')
+			->where('prefix_ip.status','Active')
+			->first();
+		//print_r($val);
+		//exit;
+                $ipaddrexplode = explode("/", $result->prefix_net);
+                $ipaddr = $ipaddrexplode[0];
+                $subnet = $ipaddrexplode[1];
+                $sub = new SubnetCalculatorController($ipaddr, $subnet);
+                $network = $sub->getNetworkPortion();
+		
+                $val['id']=$result->id;
+                $val['prefix']=$result->prefix_net;
+		$val['vlan']=$result->vlan;
+		$val['address']=$result->address;
+		$val['gateway'] = $sub->getMaxHost();
+		return $val;
+
+
+	}
+	public function GetAvailablePubIPfromPrefix($prefixid,$limit){
+                return  DB::table('prefix_ip')
+			->where('prefix_id',$prefixid)
+			->where('status',"Active")
+			->limit($limit)
+			->get();
+		
+	}
+	//public function UpdateStatusPrefix(){
+
+	//}
+	public function UpdateStatusPubIP($status,$pubipid){
+                DB::table('prefix_ip')
+                        ->where('id', $pubipid)
+                        ->update(['status' => $status]);
+		
+	}
+	public function UpdateStatusPubIPFromIP($status,$pubip){
+                DB::table('prefix_ip')
+                        ->where('address', $pubip)
+                        ->update(['status' => $status]);
+	}
 }

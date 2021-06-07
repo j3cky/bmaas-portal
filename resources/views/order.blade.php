@@ -188,15 +188,15 @@ input:disabled{
 			<div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
 				<label class="btn btn-info btn-lg" style="width: 200px;"> 
 				<img src="icon-set/West_Java.png" width="60" alt="Technovillage DC" /></a></br>
-                		<input type="radio" id="NA" name="region" value="techno" autofocus="true" onclick="regiontv()"/>  TechnoVillage
+                		<input type="radio" id="region" name="region" value=https://103.93.128.194:8092/api/v3"" autofocus="true" onclick="regiontv()"/>  TechnoVillage
 				</label>&nbsp;&nbsp;
                 		<label class="btn btn-info btn-lg" style="width: 200px;">
 				<img src="icon-set/Region_Jakarta.png" width="60" alt="Midplaza DC" /></a></br>
-                		<input type="radio" id="NA" name="region" value="mid" autofocus="true" onclick="regionmid()"/> Midplaza
+                		<input type="radio" id="region" name="region" value="https://103.93.128.190:8092/api/v3" autofocus="true" onclick="regionmid()"/> Midplaza
 				</label>&nbsp;&nbsp;
                 		<label class="btn btn-info btn-lg" style="width: 200px;">
 				<img src="icon-set/Third_Data_Center.png" width="60" alt="Teknovatus DC" /></a></br>
-                        	<input type="radio" id="NA" name="region" value="cbn" autofocus="true" onclick="regioncbn()"/> Teknovatus
+                        	<input type="radio" id="region" name="region" value="cbn" autofocus="true" onclick="regioncbn()"/> Teknovatus
                 		</label>&nbsp;&nbsp;
         	<!--button type="button" class="btn btn-info btn-lg" style="width: 150px; height: 100px;">TechnoVillage</button>&nbsp;&nbsp;
                 <button type="button" class="btn btn-info btn-lg" style="width: 150px; height: 100px;">Midplaza</button>&nbsp;&nbsp;

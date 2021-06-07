@@ -48,7 +48,7 @@ Route::get('/halo', function () {
 	return "Halo, Selamat datang di tutorial laravel www.malasngoding.com";
 });
 
-Route::get('/irctest', 'RackNController@TestIRC')->middleware('auth');
+Route::get('/irctest', 'BMAASDBController@GetAvailablePubIPfromPrefix')->middleware('auth');
 //Route::get('/irctest', function () {
 //    return view('testirc');
 //});
@@ -63,7 +63,7 @@ Route::post('/orderpage/ordergioprivate/process', 'RackNController@ProcessGioPri
 Route::post('/listmachines/action/redeploy', 'RackNController@RedeployMachine')->middleware('auth');
 Route::post('/listmachines/action/unsubbare', 'RackNController@UnsubscribeBareMetal')->middleware('auth');
 Route::post('/listmachines/action/unsubpriv', 'RackNController@UnsubGioPrivate')->middleware('auth');
-Route::post('/listmachines/action/unsubkub', 'RackNController@UnsubscribeKubCluster')->middleware('auth');
+Route::post('/listmachines/action/unsubkub', 'RackNController@UnsubscribeKubClusterJob')->middleware('auth');
 //Route::post('/{tenantval}/orderpage/orderbaremetal/process', 'RackNController@ProcessBareMetalOrder')->middleware('auth');
 Route::post('/orderpage/orderbaremetal/process', 'RackNController@ProcessBareMetalJob')->middleware('auth');
 Route::post('/orderpage/windows/process', 'RackNController@ProcessWindowsJob')->middleware('auth');
